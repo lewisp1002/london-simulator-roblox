@@ -32,8 +32,8 @@ end
 local function startDriving(seat: VehicleSeat)
 	local car = seat.Parent :: Model
 	local chassis = car.PrimaryPart
-	if not chassis then
-		return
+	if not chassis or not car:GetAttribute("ArcadeHandling") then
+		return -- not one of our cars: bought cars usually come with their own driving scripts
 	end
 
 	local rayParams = RaycastParams.new()

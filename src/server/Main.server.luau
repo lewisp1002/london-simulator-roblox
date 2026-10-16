@@ -5,9 +5,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Cars = require(script.Parent.Cars)
+local LightingSetup = require(script.Parent.LightingSetup)
 local PlayerData = require(script.Parent.PlayerData)
 local TestTown = require(script.Parent.TestTown)
 
+LightingSetup.apply()
 PlayerData.start()
 Cars.start()
 if Config.BuildTestTown then

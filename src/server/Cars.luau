@@ -133,6 +133,7 @@ local function buildCar(owner: Player, origin: CFrame): (Model, VehicleSeat)
 	local car = Instance.new("Model")
 	car.Name = owner.Name .. "'s car"
 	car:SetAttribute("OwnerUserId", owner.UserId)
+	car:SetAttribute("ArcadeHandling", true) -- tells the Driving script to drive it
 
 	local chassis = addPart(car, origin, "Chassis", Vector3.new(6.6, 1.6, 13.6), Vector3.new(0, CHASSIS_HEIGHT, 0))
 	chassis.Color = paint

@@ -43,6 +43,8 @@ Open it in Studio (double-click it, or **File → Open from File**) and press **
 
 Whenever the code changes, do steps 2–4 again. It replaces the old scripts with the new ones.
 
+Once per place, switch on Roblox's best lighting (code isn't allowed to change it): in **Explorer** click **Lighting**, then in **Properties** set **Technology** to **Future**. The ready-made game file already has this.
+
 ### Test it
 
 Press **Play**. After a few seconds you should see **£500** in the top-right corner, and you'll be standing in a park in the middle of the test town.

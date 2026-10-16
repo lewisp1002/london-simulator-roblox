@@ -13,6 +13,11 @@
         "Client": { "$path": "src/client" }
       }
     },
+    "Lighting": {
+      "$properties": {
+        "Technology": "Future"
+      }
+    },
     "Workspace": {
       "Baseplate": {
         "$className": "Part",
