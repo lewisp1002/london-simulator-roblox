@@ -16,6 +16,14 @@ A UK driving and roleplay game for Roblox, set in London.
 
 ## Getting the code into Roblox Studio
 
+### Starting fresh: open the ready-made game file
+
+`starter.project.json` builds a complete place file with every script plus a ground and spawn point already in it:
+
+    rojo build starter.project.json -o LondonSimulator.rbxlx
+
+Open it in Studio (double-click it, or **File → Open from File**) and press **Play**. Use this only to start a brand-new place. Once you've built a map, update the code with the installer below so your map isn't replaced.
+
 ### Install (or update) the game code
 
 1. Open Roblox Studio, click **New**, pick **Baseplate**.

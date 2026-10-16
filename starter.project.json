@@ -1,0 +1,42 @@
+{
+  "name": "London Simulator",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Shared": { "$path": "src/shared" }
+    },
+    "ServerScriptService": {
+      "Server": { "$path": "src/server" }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Client": { "$path": "src/client" }
+      }
+    },
+    "Workspace": {
+      "Baseplate": {
+        "$className": "Part",
+        "$properties": {
+          "Anchored": true,
+          "Locked": true,
+          "Size": [2048, 16, 2048],
+          "CFrame": { "CFrame": { "position": [0, -8, 0], "orientation": [[1, 0, 0], [0, 1, 0], [0, 0, 1]] } },
+          "Color": [0.25, 0.25, 0.27],
+          "Material": "Asphalt",
+          "TopSurface": "Smooth",
+          "BottomSurface": "Smooth"
+        }
+      },
+      "SpawnLocation": {
+        "$className": "SpawnLocation",
+        "$properties": {
+          "Anchored": true,
+          "Size": [12, 1, 12],
+          "CFrame": { "CFrame": { "position": [0, 0.5, 0], "orientation": [[1, 0, 0], [0, 1, 0], [0, 0, 1]] } },
+          "TopSurface": "Smooth",
+          "BottomSurface": "Smooth"
+        }
+      }
+    }
+  }
+}
