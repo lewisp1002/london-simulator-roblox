@@ -5,14 +5,23 @@ A UK driving and roleplay game for Roblox, set in London.
 ## Roadmap
 
 - [x] **1. Foundation** – money that saves between visits, shown on screen
-- [ ] **2. Driving** – spawn a car and drive it, speedometer in mph, speed limits
-- [ ] **3. The map** – London streets and landmarks (built in Studio)
-- [ ] **4. Taxi job** – pick up NPC passengers and drive them where they want to go
-- [ ] **5. Bus job** – double-deckers, routes, stops and timetables
-- [ ] **6. Emergency services** – police, ambulance and fire callouts ("Press T to respond")
-- [ ] **7. Road rules** – speeding and red lights, with police that come after you
-- [ ] **8. Vehicle shop and wraps**
-- [ ] **9. Minimap and in-game clock**
+- [x] **2. Driving** – spawn a right-hand-drive car with UK plates, speedometer in mph, speed limit signs, controls list, and a test town to drive around
+- [ ] **3. Main menu and teams** – Drive / Spawn / Change avatar / Invite friends; pick a team: Car, Bus, Emergency or Police
+- [ ] **4. Vehicle showroom** – browse vehicles, buy them with money, owned / not owned, customise, spawn
+- [ ] **5. Traffic lights and speed cameras**
+- [ ] **6. Wanted stars and arrests** – running red lights and getting caught by speed cameras earns stars (shown above your head); police players can arrest you, and you go to prison for 2 minutes
+- [ ] **7. Police job** – find NPC criminals, arrest them and take them back to the prison for money
+- [ ] **8. Taxi job** – pick up NPC passengers and drive them where they want to go
+- [ ] **9. Bus job** – double-deckers, routes, stops and timetables
+- [ ] **10. Emergency callouts** – ambulance and police incidents ("Press T to respond")
+- [ ] **11. Minimap and in-game clock**
+- [ ] **12. Daily rewards** – a reward for each day you play, 30 days
+- [ ] **13. Shop** – money packs and game passes for Robux, redeem codes
+
+Art (not code, built in Studio or Blender, or found on the Creator Store):
+
+- [ ] **The London map** – real streets and landmarks to replace the test town
+- [ ] **Vehicle models** – proper cars, buses, police cars and ambulances
 
 ## Getting the code into Roblox Studio
 
@@ -28,15 +37,17 @@ Open it in Studio (double-click it, or **File → Open from File**) and press **
 
 1. Open Roblox Studio, click **New**, pick **Baseplate**.
 2. Open [INSTALL.luau](INSTALL.luau) on GitHub and click the **Copy raw file** button (two overlapping squares, top-right of the code).
-3. In Studio, open the **Command Bar**: **View** tab → **Command Bar** (in newer Studio it may be under the **Window** menu). A long box appears at the bottom of the screen.
+3. In Studio, open the **Command Bar**: **Window** menu (top of the screen) → **Command Bar**. In older Studio it's on the **View** tab. A long box appears at the bottom of the screen.
 4. Click in that box, paste (Ctrl+V, or Cmd+V on a Mac) and press **Enter**.
-5. The **Output** window (View tab → Output) says *London Simulator installed 5 scripts*.
+5. The **Output** window (**Window** → **Output**) says *London Simulator installed … scripts*.
 
 Whenever the code changes, do steps 2–4 again. It replaces the old scripts with the new ones.
 
 ### Test it
 
-Press **Play**. After a few seconds you should see **£500** in the top-right corner.
+Press **Play**. After a few seconds you should see **£500** in the top-right corner, and you'll be standing in a park in the middle of the test town.
+
+Click **🚗 Spawn car** to get in a car. Drive with **W A S D** (or the arrow keys), get out with **Space**. Walk up to your car and press **E** to drive it again; anyone can press **F** to ride as your passenger.
 
 A yellow warning about saving in Output is normal until you turn on saving (below).
 

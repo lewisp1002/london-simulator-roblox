@@ -18,4 +18,27 @@ Config.AutosaveIntervalSeconds = 120
 -- Changing this name starts everyone from scratch (e.g. to wipe test data before launch)
 Config.DataStoreName = "PlayerData_v1"
 
+-- Builds a small grid of streets to drive around until the real London map exists
+Config.BuildTestTown = true
+
+-- 1 stud is about 0.28 metres, so 1 stud per second is about 0.626 mph
+Config.MphPerStudPerSecond = 0.626
+
+-- How the car handles. Speeds are in studs per second (multiply by 0.626 for mph).
+Config.Car = {
+	TopSpeed = 112, -- about 70 mph
+	ReverseSpeed = 24, -- about 15 mph
+	Acceleration = 14, -- 0-60 mph in about 7 seconds
+	BrakeDeceleration = 45,
+	CoastDeceleration = 6, -- slowing down when you let go of the accelerator
+	SideGrip = 120, -- how quickly sideways sliding is cancelled out
+	CorneringGrip = 50, -- limits how sharply you can turn at speed
+	MaxTurnRate = 1.4, -- radians per second, at low speed
+	SteeringLockDegrees = 35,
+	SteeringResponse = 5, -- how quickly the wheel turns from straight to full lock (per second)
+	Wheelbase = 8.8, -- distance between front and back wheels
+	WheelRadius = 1.3,
+	SpawnCooldownSeconds = 3,
+}
+
 return Config

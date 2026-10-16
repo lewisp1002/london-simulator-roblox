@@ -1,10 +1,14 @@
--- Shows the player's cash in the top-right corner, with a "+£100" pop-up when they earn money.
+-- The bar in the top-right corner: a button to spawn your car, and your cash (with a "+£100" pop-up when you earn money).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
-local Format = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Format"))
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Config = require(Shared:WaitForChild("Config"))
+local Format = require(Shared:WaitForChild("Format"))
+
+local spawnCarRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("SpawnCar") :: RemoteEvent
 
 local GREEN = Color3.fromRGB(80, 220, 120)
 
@@ -16,28 +20,69 @@ gui.ResetOnSpawn = false -- keep the HUD when the player respawns
 gui.IgnoreGuiInset = true -- lets us line up with Roblox's own top bar buttons
 gui.Parent = player:WaitForChild("PlayerGui")
 
-local cashPill = Instance.new("TextLabel")
+local topBar = Instance.new("Frame")
+topBar.Name = "TopBar"
+topBar.AnchorPoint = Vector2.new(1, 0)
+topBar.Position = UDim2.new(1, -12, 0, 12)
+topBar.Size = UDim2.fromOffset(0, 44)
+topBar.AutomaticSize = Enum.AutomaticSize.X
+topBar.BackgroundTransparency = 1
+topBar.Parent = gui
+
+local layout = Instance.new("UIListLayout")
+layout.FillDirection = Enum.FillDirection.Horizontal
+layout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+layout.Padding = UDim.new(0, 8)
+layout.Parent = topBar
+
+-- Rounded black "pill" shape shared by everything in the top bar
+local function stylePill(pill: TextButton, order: number)
+	pill.LayoutOrder = order
+	pill.Size = UDim2.fromOffset(0, 44)
+	pill.AutomaticSize = Enum.AutomaticSize.X
+	pill.BackgroundColor3 = Color3.new(0, 0, 0)
+	pill.BackgroundTransparency = 0.3
+	pill.Font = Enum.Font.GothamBold
+	pill.TextSize = 18
+	pill.TextColor3 = Color3.new(1, 1, 1)
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(1, 0) -- fully rounded ends
+	corner.Parent = pill
+
+	local padding = Instance.new("UIPadding")
+	padding.PaddingLeft = UDim.new(0, 16)
+	padding.PaddingRight = UDim.new(0, 16)
+	padding.Parent = pill
+
+	pill.Parent = topBar
+end
+
+local spawnButton = Instance.new("TextButton")
+spawnButton.Name = "SpawnCar"
+spawnButton.Text = "🚗 Spawn car"
+stylePill(spawnButton, 1)
+
+-- A button so it can open the shop later on
+local cashPill = Instance.new("TextButton")
 cashPill.Name = "Cash"
+cashPill.AutoButtonColor = false
 cashPill.Visible = false -- hidden until their data has loaded
-cashPill.AnchorPoint = Vector2.new(1, 0)
-cashPill.Position = UDim2.new(1, -12, 0, 12)
-cashPill.Size = UDim2.fromOffset(0, 44)
-cashPill.AutomaticSize = Enum.AutomaticSize.X
-cashPill.BackgroundColor3 = Color3.new(0, 0, 0)
-cashPill.BackgroundTransparency = 0.3
-cashPill.Font = Enum.Font.GothamBold
-cashPill.TextSize = 18
-cashPill.TextColor3 = Color3.new(1, 1, 1)
-cashPill.Parent = gui
+stylePill(cashPill, 2)
 
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(1, 0) -- fully rounded ends
-corner.Parent = cashPill
-
-local padding = Instance.new("UIPadding")
-padding.PaddingLeft = UDim.new(0, 16)
-padding.PaddingRight = UDim.new(0, 16)
-padding.Parent = cashPill
+local coolingDown = false
+spawnButton.Activated:Connect(function()
+	if coolingDown then
+		return
+	end
+	coolingDown = true
+	spawnCarRemote:FireServer()
+	spawnButton.TextTransparency = 0.5
+	task.wait(Config.Car.SpawnCooldownSeconds)
+	spawnButton.TextTransparency = 0
+	coolingDown = false
+end)
 
 local function showGain(amount: number)
 	local popup = Instance.new("TextLabel")
