@@ -6,15 +6,15 @@ A UK driving and roleplay game for Roblox, set in London.
 
 - [x] **1. Foundation** – money that saves between visits, shown on screen
 - [x] **2. Driving** – spawn a right-hand-drive car with UK plates, speedometer in mph, speed limit signs, controls list, and a test town to drive around
-- [ ] **3. Main menu and teams** – Drive / Spawn / Change avatar / Invite friends; pick a team: Car, Bus, Emergency or Police
-- [ ] **4. Vehicle showroom** – browse vehicles, buy them with money, owned / not owned, customise, spawn
-- [ ] **5. Traffic lights and speed cameras**
+- [x] **3. Main menu and teams** – Drive / Spawn / Close, Change avatar, Invite friends; pick a team: Car, Bus or Emergency (police and ambulance)
+- [x] **4. Vehicle showroom** – browse each team's vehicles at its depot, buy them with money, owned / not owned, paint colours, spawn
+- [ ] **5. Traffic lights and speed cameras** – lights and cameras are in the test town and the lights work; catching drivers comes with step 6
 - [ ] **6. Wanted stars and arrests** – running red lights and getting caught by speed cameras earns stars (shown above your head); police players can arrest you, and you go to prison for 2 minutes
 - [ ] **7. Police job** – find NPC criminals, arrest them and take them back to the prison for money
 - [ ] **8. Taxi job** – pick up NPC passengers and drive them where they want to go
 - [ ] **9. Bus job** – double-deckers, routes, stops and timetables
 - [ ] **10. Emergency callouts** – ambulance and police incidents ("Press T to respond")
-- [ ] **11. Minimap and in-game clock**
+- [x] **11. Minimap and in-game clock** – shown with your speed while driving
 - [ ] **12. Daily rewards** – a reward for each day you play, 30 days
 - [ ] **13. Shop** – money packs and game passes for Robux, redeem codes
 
@@ -47,9 +47,15 @@ Once per place, switch on Roblox's best lighting (code isn't allowed to change i
 
 ### Test it
 
-Press **Play**. After a few seconds you should see **£500** in the top-right corner, and you'll be standing in a park in the middle of the test town.
+Press **Play**. The main menu appears over a view of the river and the clock tower.
 
-Click **🚗 Spawn car** to get in a car. Drive with **W A S D** (or the arrow keys), get out with **Space**. Walk up to your car and press **E** to drive it again; anyone can press **F** to ride as your passenger.
+1. Click **Drive**, then pick a team: **Car**, **Bus** or **Emergency**.
+2. You're taken to your team's depot (petrol station, bus garage or police station). Click a vehicle along the bottom, then **Spawn**. Vehicles you don't own show a price: click **Buy**. **Customise** changes the paint.
+3. Drive with **W A S D**. **Space** is the handbrake, **F** gets out, **L** lights, **Q** / **E** indicators, **B** hazards, **R** blue lights (police and ambulance only).
+4. Walk up to your vehicle and press **E** to drive it again; anyone can press **F** to ride as your passenger.
+5. **☰ Menu** (top left) puts your vehicle away and goes back to the main menu. **Spawn** on the main menu lets you walk around instead.
+
+Your speed, the speed limit, the time and a minimap show in the bottom left while you drive.
 
 A yellow warning about saving in Output is normal until you turn on saving (below).
 

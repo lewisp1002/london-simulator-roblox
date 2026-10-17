@@ -34,6 +34,9 @@ local function folder(parent: Instance, name: string): Instance
 	return newFolder
 end
 
+-- Names of the scripts this installer puts in each folder, so old ones that were removed or renamed can go
+local installed: { [Instance]: { [string]: boolean } } = {}
+
 local function put(parent: Instance, className: string, name: string, source: string)
 	local old = parent:FindFirstChild(name)
 	if old then
@@ -43,6 +46,19 @@ local function put(parent: Instance, className: string, name: string, source: st
 	newScript.Name = name
 	newScript.Source = source
 	newScript.Parent = parent
+	installed[parent] = installed[parent] or {}
+	installed[parent][name] = true
+end
+
+-- Deletes scripts in our folders that aren't in the repo any more (e.g. a script that was renamed)
+local function removeOldScripts(parent: Instance)
+	local keep = installed[parent] or {}
+	for _, child in parent:GetChildren() do
+		if child:IsA("LuaSourceContainer") and not keep[child.Name] then
+			print("Removed old script " .. child:GetFullName())
+			child:Destroy()
+		end
+	end
 end
 """
 
@@ -78,6 +94,7 @@ def emit_dir(lines: list[str], directory: Path, var: str, counter: list[int]) ->
             source = entry.read_text(encoding="utf-8")
             lines.append(f'put({var}, "{class_name}", "{name}", {long_string(source)})')
             count += 1
+    lines.append(f"removeOldScripts({var})")
     return count
 
 

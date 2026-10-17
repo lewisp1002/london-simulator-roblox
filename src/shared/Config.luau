@@ -38,7 +38,35 @@ Config.Car = {
 	SteeringResponse = 5, -- how quickly the wheel turns from straight to full lock (per second)
 	Wheelbase = 8.8, -- distance between front and back wheels
 	WheelRadius = 1.3,
+	HandbrakeDeceleration = 70, -- Space while driving
 	SpawnCooldownSeconds = 3,
+	-- New cars are "ghosts" other cars drive through for this long, so nobody gets rammed at the spawn
+	GhostSeconds = 5,
+}
+
+-- The teams you pick from the menu, in the order they're shown
+Config.Teams = {
+	{
+		name = "Car",
+		icon = "🚗",
+		colour = Color3.fromRGB(90, 140, 230),
+		description = "Drive your own car, race your mates and run a taxi",
+		showcase = "kestrel_saloon", -- the vehicle shown on the team's card
+	},
+	{
+		name = "Bus",
+		icon = "🚌",
+		colour = Color3.fromRGB(225, 60, 55),
+		description = "Drive London's red buses and pick up passengers",
+		showcase = "capital_decker",
+	},
+	{
+		name = "Emergency",
+		icon = "🚓",
+		colour = Color3.fromRGB(245, 195, 50),
+		description = "Police and ambulance: answer calls across London",
+		showcase = "police_kestrel",
+	},
 }
 
 return Config

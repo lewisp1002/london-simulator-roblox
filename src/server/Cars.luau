@@ -1,11 +1,17 @@
--- Spawns and looks after players' cars: one car each, built from parts.
+-- Spawns and looks after players' vehicles: one each, built by CarBuilder.
 -- The driving itself happens in the Driving LocalScript, on the driver's own device, so it feels instant.
+-- Vehicles appear at your team's depot (a model in Workspace → Depots with "Spawn" parts in it).
 
 local Players = game:GetService("Players")
+local PhysicsService = game:GetService("PhysicsService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Vehicles = require(ReplicatedStorage.Shared.Vehicles)
+local CarBuilder = require(script.Parent.CarBuilder)
+local PlayerData = require(script.Parent.PlayerData)
+local Remotes = require(script.Parent.Remotes)
 
 local CAR = Config.Car
 
@@ -13,20 +19,11 @@ local CAR = Config.Car
 local SLIDING = PhysicalProperties.new(0.7, 0, 0, 100, 100)
 -- Parked cars grip the road hard so they don't get shoved around, like a handbrake
 local PARKED = PhysicalProperties.new(0.7, 2, 0, 100, 100)
--- A heavy, low chassis stops the car tipping over
-local HEAVY_SLIDING = PhysicalProperties.new(3, 0, 0, 100, 100)
 
--- Height of the middle of the chassis above the road
-local CHASSIS_HEIGHT = 2.1
+-- Collision groups: "Ghost" vehicles drive straight through other vehicles for a few seconds after spawning
+local CARS_GROUP = "Cars"
+local GHOST_GROUP = "GhostCars"
 
-local PAINT_COLOURS = {
-	Color3.fromRGB(240, 240, 240), -- white
-	Color3.fromRGB(25, 25, 28), -- black
-	Color3.fromRGB(160, 165, 170), -- silver
-	Color3.fromRGB(180, 20, 30), -- red
-	Color3.fromRGB(30, 70, 160), -- blue
-	Color3.fromRGB(0, 66, 37), -- British racing green
-}
 local PLATE_LETTERS = "ABCDEFGHJKLMNOPRSTUVWXY" -- UK plates skip I, Q and Z
 local PLATE_AGES = { "24", "74", "25", "75", "26", "76" }
 
@@ -57,55 +54,23 @@ local function getHumanoid(player: Player): Humanoid?
 	return nil
 end
 
--- `offset` is measured from the middle of the car at road level. The front of the car is -Z.
-local function place(part: BasePart, car: Model, origin: CFrame, size: Vector3, offset: Vector3)
-	part.Size = size
-	part.CFrame = origin * CFrame.new(offset)
-	part.TopSurface = Enum.SurfaceType.Smooth
-	part.BottomSurface = Enum.SurfaceType.Smooth
-	part.Material = Enum.Material.SmoothPlastic
-	part.CustomPhysicalProperties = SLIDING
-	part.Parent = car
+local function setCollisionGroup(car: Model, group: string)
+	for _, descendant in car:GetDescendants() do
+		if descendant:IsA("BasePart") then
+			descendant.CollisionGroup = group
+		end
+	end
 end
 
-local function addPart(car: Model, origin: CFrame, name: string, size: Vector3, offset: Vector3): Part
-	local part = Instance.new("Part")
-	part.Name = name
-	place(part, car, origin, size, offset)
-	return part
+local function setParked(car: Model, parked: boolean)
+	for _, child in car:GetChildren() do
+		if child.Name == "TyreContact" and child:IsA("BasePart") then
+			child.CustomPhysicalProperties = if parked then PARKED else SLIDING
+		end
+	end
 end
 
-local function weld(part: BasePart, chassis: BasePart)
-	part.Massless = true
-	local joint = Instance.new("WeldConstraint")
-	joint.Part0 = chassis
-	joint.Part1 = part
-	joint.Parent = part
-end
-
-local function addPlate(car: Model, origin: CFrame, chassis: BasePart, plateText: string, z: number, face: Enum.NormalId, colour: Color3)
-	local plate = addPart(car, origin, "NumberPlate", Vector3.new(2.6, 0.6, 0.1), Vector3.new(0, 1.8, z))
-	plate.Color = colour
-	plate.CanCollide = false
-	weld(plate, chassis)
-
-	local surface = Instance.new("SurfaceGui")
-	surface.Face = face
-	surface.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	surface.PixelsPerStud = 100
-	surface.Parent = plate
-
-	local label = Instance.new("TextLabel")
-	label.Size = UDim2.fromScale(1, 1)
-	label.BackgroundTransparency = 1
-	label.Font = Enum.Font.GothamBold
-	label.TextScaled = true
-	label.TextColor3 = Color3.new(0, 0, 0)
-	label.Text = plateText
-	label.Parent = surface
-end
-
-local function addPrompt(seat: BasePart, actionText: string, objectText: string, key: Enum.KeyCode): ProximityPrompt
+local function addPrompt(seat: BasePart, actionText: string, objectText: string, key: Enum.KeyCode, offset: number): ProximityPrompt
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = actionText
 	prompt.ObjectText = objectText
@@ -113,107 +78,17 @@ local function addPrompt(seat: BasePart, actionText: string, objectText: string,
 	prompt.HoldDuration = 0
 	prompt.MaxActivationDistance = 12
 	prompt.RequiresLineOfSight = false
+	-- The seats are side by side, so stack the two prompts instead of drawing them on top of each other
+	prompt.UIOffset = Vector2.new(0, offset)
 	prompt.Parent = seat
 	return prompt
 end
 
-local function setParked(car: Model, parked: boolean)
-	for _, part in car:GetChildren() do
-		if part.Name == "TyreContact" and part:IsA("BasePart") then
-			part.CustomPhysicalProperties = if parked then PARKED else SLIDING
-		end
-	end
-end
-
--- Builds a car standing on the road at `origin`, facing the way `origin` faces
-local function buildCar(owner: Player, origin: CFrame): (Model, VehicleSeat)
-	local paint = PAINT_COLOURS[random:NextInteger(1, #PAINT_COLOURS)]
-	local plateText = randomPlate()
-
-	local car = Instance.new("Model")
-	car.Name = owner.Name .. "'s car"
-	car:SetAttribute("OwnerUserId", owner.UserId)
-	car:SetAttribute("ArcadeHandling", true) -- tells the Driving script to drive it
-
-	local chassis = addPart(car, origin, "Chassis", Vector3.new(6.6, 1.6, 13.6), Vector3.new(0, CHASSIS_HEIGHT, 0))
-	chassis.Color = paint
-	chassis.CustomPhysicalProperties = HEAVY_SLIDING
-	chassis.RootPriority = 127
-	car.PrimaryPart = chassis
-
-	local cabin = addPart(car, origin, "Windows", Vector3.new(6, 3.3, 6.8), Vector3.new(0, 4.55, 0.6))
-	cabin.Material = Enum.Material.Glass
-	cabin.Color = Color3.fromRGB(35, 45, 55)
-	cabin.Transparency = 0.35
-	weld(cabin, chassis)
-
-	local roof = addPart(car, origin, "Roof", Vector3.new(6.2, 0.3, 7), Vector3.new(0, 6.35, 0.6))
-	roof.Color = paint
-	weld(roof, chassis)
-
-	for _, side in { -1, 1 } do
-		local headlight = addPart(car, origin, "Headlight", Vector3.new(1.4, 0.5, 0.2), Vector3.new(side * 2.3, 2.5, -6.85))
-		headlight.Material = Enum.Material.Neon
-		headlight.Color = Color3.fromRGB(255, 250, 225)
-		headlight.CanCollide = false
-		weld(headlight, chassis)
-
-		local taillight = addPart(car, origin, "Taillight", Vector3.new(1.4, 0.5, 0.2), Vector3.new(side * 2.3, 2.5, 6.85))
-		taillight.Material = Enum.Material.Neon
-		taillight.Color = Color3.fromRGB(200, 0, 0)
-		taillight.CanCollide = false
-		weld(taillight, chassis)
-	end
-
-	-- UK plates: white on the front, yellow on the back
-	addPlate(car, origin, chassis, plateText, -6.85, Enum.NormalId.Front, Color3.fromRGB(245, 245, 245))
-	addPlate(car, origin, chassis, plateText, 6.85, Enum.NormalId.Back, Color3.fromRGB(255, 205, 0))
-
-	local axle = CAR.Wheelbase / 2
-	for _, z in { -axle, axle } do
-		for _, side in { -1, 1 } do
-			local offset = Vector3.new(side * 3, CAR.WheelRadius, z)
-
-			-- The wheel you see. It's jointed (not welded) so Driving can turn and spin it.
-			local wheel = addPart(car, origin, "Wheel", Vector3.new(1, CAR.WheelRadius * 2, CAR.WheelRadius * 2), offset)
-			wheel.Shape = Enum.PartType.Cylinder
-			wheel.Color = Color3.fromRGB(20, 20, 20)
-			wheel.CanCollide = false
-			wheel.Massless = true
-			local joint = Instance.new("Motor6D")
-			joint.Name = "WheelJoint"
-			joint.Part0 = chassis
-			joint.Part1 = wheel
-			joint.C0 = CFrame.new(offset - Vector3.new(0, CHASSIS_HEIGHT, 0))
-			joint:SetAttribute("Steers", z < 0)
-			joint.Parent = chassis
-
-			-- An invisible ball inside each wheel is what actually touches the road
-			local contact = addPart(car, origin, "TyreContact", Vector3.one * CAR.WheelRadius * 2, offset)
-			contact.Shape = Enum.PartType.Ball
-			contact.Transparency = 1
-			weld(contact, chassis)
-		end
-	end
-
-	-- Right-hand drive, like a real British car
-	local driverSeat = Instance.new("VehicleSeat")
-	driverSeat.Name = "DriverSeat"
-	driverSeat.HeadsUpDisplay = false -- we draw our own speedometer
-	driverSeat.Transparency = 1
-	driverSeat.CanCollide = false
-	place(driverSeat, car, origin, Vector3.new(2, 0.4, 2), Vector3.new(1.4, 1.7, -0.6))
-	weld(driverSeat, chassis)
-
-	local passengerSeat = Instance.new("Seat")
-	passengerSeat.Name = "PassengerSeat"
-	passengerSeat.Transparency = 1
-	passengerSeat.CanCollide = false
-	place(passengerSeat, car, origin, Vector3.new(2, 0.4, 2), Vector3.new(-1.4, 1.7, -0.6))
-	weld(passengerSeat, chassis)
-
-	local drivePrompt = addPrompt(driverSeat, "Drive", owner.DisplayName .. "'s car", Enum.KeyCode.E)
-	local passengerPrompt = addPrompt(passengerSeat, "Get in", owner.DisplayName .. "'s car", Enum.KeyCode.F)
+-- Seats, prompts and network ownership for a freshly built car
+local function wireUp(car: Model, owner: Player, driverSeat: VehicleSeat, passengerSeat: Seat)
+	local chassis = car.PrimaryPart :: BasePart
+	local drivePrompt = addPrompt(driverSeat, "Drive", owner.DisplayName .. "'s " .. car.Name, Enum.KeyCode.E, -42)
+	local passengerPrompt = addPrompt(passengerSeat, "Get in", owner.DisplayName .. "'s " .. car.Name, Enum.KeyCode.F, 42)
 
 	drivePrompt.Triggered:Connect(function(player)
 		local humanoid = getHumanoid(player)
@@ -245,6 +120,9 @@ local function buildCar(owner: Player, origin: CFrame): (Model, VehicleSeat)
 		end
 		drivePrompt.Enabled = humanoid == nil
 		setParked(car, driver == nil)
+		if driver == nil then
+			car:SetAttribute("Indicator", nil) -- switch indicators off when you get out
+		end
 		-- The driver's device runs the car's physics while they drive, so there's no lag
 		chassis:SetNetworkOwner(driver)
 	end)
@@ -252,13 +130,72 @@ local function buildCar(owner: Player, origin: CFrame): (Model, VehicleSeat)
 	passengerSeat:GetPropertyChangedSignal("Occupant"):Connect(function()
 		passengerPrompt.Enabled = passengerSeat.Occupant == nil
 	end)
-
-	setParked(car, true)
-	car.Parent = carsFolder
-	return car, driverSeat
 end
 
-local function spawnCar(player: Player)
+-- A free parking space at the team's depot, or next to the player if there's no depot in the map
+local function findSpawn(player: Player, root: BasePart): CFrame
+	local depots = Workspace:FindFirstChild("Depots")
+	local team = player.Team
+	local depot = depots and team and depots:FindFirstChild(team.Name)
+	if depot then
+		local spots = {}
+		for _, child in depot:GetChildren() do
+			if child.Name == "Spawn" and child:IsA("BasePart") then
+				table.insert(spots, child)
+			end
+		end
+		for _, spot in spots do
+			local taken = false
+			for _, car in carsFolder:GetChildren() do
+				local chassis = (car :: Model).PrimaryPart
+				if chassis and (chassis.Position - spot.Position).Magnitude < 14 then
+					taken = true
+					break
+				end
+			end
+			if not taken then
+				return spot.CFrame
+			end
+		end
+		if #spots > 0 then
+			return spots[random:NextInteger(1, #spots)].CFrame
+		end
+	end
+
+	-- No depot: put the car right where they're standing, facing the way they face
+	local facing = root.CFrame.LookVector * Vector3.new(1, 0, 1)
+	if facing.Magnitude < 0.01 then
+		facing = Vector3.new(0, 0, -1)
+	end
+	local ground = root.Position - Vector3.new(0, 3, 0)
+	return CFrame.lookAt(ground, ground + facing.Unit)
+end
+
+function Cars.despawn(player: Player)
+	local car = carsByPlayer[player]
+	if car then
+		car:Destroy()
+	end
+	carsByPlayer[player] = nil
+end
+
+local function spawnVehicle(player: Player, vehicleId: unknown)
+	if typeof(vehicleId) ~= "string" then
+		return
+	end
+	local vehicle = Vehicles.ById[vehicleId]
+	if not vehicle then
+		return
+	end
+	if not player.Team or player.Team.Name ~= vehicle.team then
+		Remotes.notify(player, "Wrong team", `Join the {vehicle.team} team to drive the {vehicle.name}.`, "Red")
+		return
+	end
+	if not PlayerData.owns(player, vehicle.id) then
+		Remotes.notify(player, "Not yours yet", `Buy the {vehicle.name} first.`, "Red")
+		return
+	end
+
 	local now = os.clock()
 	if now - (lastSpawnTime[player] or -math.huge) < CAR.SpawnCooldownSeconds then
 		return
@@ -270,52 +207,108 @@ local function spawnCar(player: Player)
 	end
 	lastSpawnTime[player] = now
 
-	-- Work out where they are before removing their old car, as they might be sitting in it
-	local rootCFrame = root.CFrame
-	local oldCar = carsByPlayer[player]
-	if oldCar then
-		oldCar:Destroy()
-	end
+	-- Get out of any seat first, then remove their old car
+	humanoid.Sit = false
+	Cars.despawn(player)
 
-	local rayParams = RaycastParams.new()
-	rayParams.FilterType = Enum.RaycastFilterType.Exclude
-	rayParams.FilterDescendantsInstances = { humanoid.Parent :: Instance, carsFolder }
-	local ground = Workspace:Raycast(rootCFrame.Position, Vector3.new(0, -12, 0), rayParams)
-	if not ground then
-		return -- they're not standing on anything
-	end
+	local origin = findSpawn(player, root)
+	local paint = Vehicles.paintColour(vehicle, PlayerData.paintOf(player, vehicle.id))
+	local car, driverSeat, passengerSeat = CarBuilder.build(vehicle, origin, paint, randomPlate())
+	car.Name = vehicle.name
+	car:SetAttribute("OwnerUserId", player.UserId)
+	wireUp(car, player, driverSeat, passengerSeat)
+	setParked(car, true)
 
-	-- Put the car right where they're standing, facing the way they face
-	local facing = rootCFrame.LookVector * Vector3.new(1, 0, 1)
-	if facing.Magnitude < 0.01 then
-		facing = Vector3.new(0, 0, -1)
-	end
-	local origin = CFrame.lookAt(ground.Position, ground.Position + facing.Unit)
-
-	local car, driverSeat = buildCar(player, origin)
+	-- Start as a ghost so nobody can ram you while you get going
+	setCollisionGroup(car, GHOST_GROUP)
+	car.Parent = carsFolder
 	carsByPlayer[player] = car
 	driverSeat:Sit(humanoid)
+
+	task.delay(Config.Car.GhostSeconds, function()
+		if car.Parent then
+			setCollisionGroup(car, CARS_GROUP)
+			Remotes.notify(player, "Collisions on", "Other players can now hit your vehicle. Drive carefully!", "Yellow")
+		end
+	end)
+end
+
+-- Lights, indicators and blue lights. The driver asks, the server sets an attribute, and VehicleLights
+-- on every player's device makes the bulbs flash.
+local function control(player: Player, action: unknown)
+	local car = carsByPlayer[player]
+	local humanoid = getHumanoid(player)
+	if not car or not humanoid or typeof(action) ~= "string" then
+		return
+	end
+	local driverSeat = car:FindFirstChild("DriverSeat") :: VehicleSeat?
+	if not driverSeat or driverSeat.Occupant ~= humanoid then
+		return -- only the driver can work the switches
+	end
+
+	if action == "Lights" then
+		car:SetAttribute("Headlights", not car:GetAttribute("Headlights"))
+	elseif action == "Left" or action == "Right" or action == "Hazard" then
+		car:SetAttribute("Indicator", if car:GetAttribute("Indicator") == action then nil else action)
+	elseif action == "BlueLights" and car:GetAttribute("HasBlueLights") then
+		car:SetAttribute("BlueLights", not car:GetAttribute("BlueLights"))
+	end
+end
+
+-- Display copies of every vehicle for the menu: ReplicatedStorage → VehicleModels → <vehicle id>.
+-- They're anchored, can't be sat in and can't be bumped into.
+local function buildDisplayModels()
+	local folder = Instance.new("Folder")
+	folder.Name = "VehicleModels"
+	for _, vehicle in Vehicles.List do
+		local model = CarBuilder.build(vehicle, CFrame.new(), Vehicles.paintColour(vehicle, nil), "LDN 5IM")
+		model.Name = vehicle.id
+		for _, descendant in model:GetDescendants() do
+			if descendant:IsA("BasePart") then
+				descendant.Anchored = true
+				descendant.CanCollide = false
+				descendant.CanQuery = false
+			end
+			if descendant:IsA("Seat") then
+				descendant.Disabled = true
+			elseif descendant:IsA("VehicleSeat") then
+				descendant.Disabled = true
+			end
+		end
+		model.Parent = folder
+	end
+	folder.Parent = ReplicatedStorage
 end
 
 function Cars.start()
+	PhysicsService:RegisterCollisionGroup(CARS_GROUP)
+	PhysicsService:RegisterCollisionGroup(GHOST_GROUP)
+	PhysicsService:CollisionGroupSetCollidable(GHOST_GROUP, CARS_GROUP, false)
+	PhysicsService:CollisionGroupSetCollidable(GHOST_GROUP, GHOST_GROUP, false)
+
 	carsFolder = Instance.new("Folder")
 	carsFolder.Name = "Cars"
 	carsFolder.Parent = Workspace
 
-	local remotes = Instance.new("Folder")
-	remotes.Name = "Remotes"
-	local spawnRemote = Instance.new("RemoteEvent")
-	spawnRemote.Name = "SpawnCar"
-	spawnRemote.Parent = remotes
-	remotes.Parent = ReplicatedStorage
-	spawnRemote.OnServerEvent:Connect(spawnCar)
+	buildDisplayModels()
+
+	Remotes.event("SpawnVehicle").OnServerEvent:Connect(spawnVehicle)
+	Remotes.event("CarControl").OnServerEvent:Connect(control)
+	Remotes.event("ReturnToMenu").OnServerEvent:Connect(function(player)
+		local humanoid = getHumanoid(player)
+		if humanoid then
+			humanoid.Sit = false
+		end
+		Cars.despawn(player)
+	end)
+	-- "Spawn" on the main menu: walk around instead of driving, starting at a spawn point
+	Remotes.event("SpawnOnFoot").OnServerEvent:Connect(function(player)
+		Cars.despawn(player)
+		player:LoadCharacterAsync()
+	end)
 
 	Players.PlayerRemoving:Connect(function(player)
-		local car = carsByPlayer[player]
-		if car then
-			car:Destroy()
-		end
-		carsByPlayer[player] = nil
+		Cars.despawn(player)
 		lastSpawnTime[player] = nil
 	end)
 end

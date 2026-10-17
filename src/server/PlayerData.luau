@@ -1,17 +1,22 @@
--- Loads, saves and changes each player's saved data (just cash for now).
+-- Loads, saves and changes each player's saved data: cash, the vehicles they own and the colours they picked.
 -- Other server scripts use it like this:
 --   PlayerData.addCash(player, 50)
+--   if PlayerData.owns(player, "regent_gt") then ... end
+-- The client can read it too, through attributes on the player: "Cash", "Owned_<vehicle id>" and "Paint_<vehicle id>".
 
 local DataStoreService = game:GetService("DataStoreService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Vehicles = require(ReplicatedStorage.Shared.Vehicles)
 
 local MAX_ATTEMPTS = 3
 
 type Data = {
 	cash: number,
+	owned: { string }, -- ids of vehicles they've bought
+	paints: { [string]: number }, -- vehicle id -> paint number they picked
 }
 
 type Session = {
@@ -47,9 +52,35 @@ local function retry(action: () -> ...any): (boolean, any)
 	return ok, result
 end
 
+-- Copies a save into fresh data, skipping anything broken or for vehicles that no longer exist
+local function readSave(saved: any, data: Data)
+	if type(saved) ~= "table" then
+		return
+	end
+	if type(saved.cash) == "number" then
+		data.cash = saved.cash
+	end
+	if type(saved.owned) == "table" then
+		for _, id in saved.owned do
+			if type(id) == "string" and Vehicles.ById[id] and not table.find(data.owned, id) then
+				table.insert(data.owned, id)
+			end
+		end
+	end
+	if type(saved.paints) == "table" then
+		for id, paint in saved.paints do
+			if type(id) == "string" and Vehicles.ById[id] and type(paint) == "number" and Vehicles.Paints[paint] then
+				data.paints[id] = paint
+			end
+		end
+	end
+end
+
 local function onPlayerAdded(player: Player)
 	local data: Data = {
 		cash = Config.StartingCash,
+		owned = {},
+		paints = {},
 	}
 	local canSave = false
 
@@ -58,9 +89,7 @@ local function onPlayerAdded(player: Player)
 			return store:GetAsync(keyFor(player))
 		end)
 		if ok then
-			if type(saved) == "table" and type(saved.cash) == "number" then
-				data.cash = saved.cash
-			end
+			readSave(saved, data)
 			canSave = true
 		else
 			warn(`[PlayerData] Couldn't load {player.Name}'s data, so it won't be saved this session:`, saved)
@@ -72,6 +101,12 @@ local function onPlayerAdded(player: Player)
 	end
 
 	sessions[player] = { data = data, canSave = canSave }
+	for _, id in data.owned do
+		player:SetAttribute("Owned_" .. id, true)
+	end
+	for id, paint in data.paints do
+		player:SetAttribute("Paint_" .. id, paint)
+	end
 	player:SetAttribute("Cash", data.cash)
 end
 
@@ -93,6 +128,10 @@ local function onPlayerRemoving(player: Player)
 	sessions[player] = nil
 end
 
+function PlayerData.isLoaded(player: Player): boolean
+	return sessions[player] ~= nil
+end
+
 function PlayerData.addCash(player: Player, amount: number)
 	local session = sessions[player]
 	if not session then
@@ -100,6 +139,54 @@ function PlayerData.addCash(player: Player, amount: number)
 	end
 	session.data.cash += amount
 	player:SetAttribute("Cash", session.data.cash)
+end
+
+-- Takes money only if they've got enough. Returns true if it worked.
+function PlayerData.trySpend(player: Player, amount: number): boolean
+	local session = sessions[player]
+	if not session or session.data.cash < amount then
+		return false
+	end
+	session.data.cash -= amount
+	player:SetAttribute("Cash", session.data.cash)
+	return true
+end
+
+-- Free vehicles (price 0) count as owned by everyone
+function PlayerData.owns(player: Player, vehicleId: string): boolean
+	local vehicle = Vehicles.ById[vehicleId]
+	if not vehicle then
+		return false
+	end
+	if vehicle.price == 0 then
+		return true
+	end
+	local session = sessions[player]
+	return session ~= nil and table.find(session.data.owned, vehicleId) ~= nil
+end
+
+function PlayerData.giveVehicle(player: Player, vehicleId: string)
+	local session = sessions[player]
+	if not session or table.find(session.data.owned, vehicleId) then
+		return
+	end
+	table.insert(session.data.owned, vehicleId)
+	player:SetAttribute("Owned_" .. vehicleId, true)
+end
+
+function PlayerData.paintOf(player: Player, vehicleId: string): number?
+	local session = sessions[player]
+	return session and session.data.paints[vehicleId]
+end
+
+function PlayerData.setPaint(player: Player, vehicleId: string, paint: number?)
+	local session = sessions[player]
+	if not session then
+		return
+	end
+	local paints: { [string]: number? } = session.data.paints
+	paints[vehicleId] = paint
+	player:SetAttribute("Paint_" .. vehicleId, paint)
 end
 
 function PlayerData.start()
