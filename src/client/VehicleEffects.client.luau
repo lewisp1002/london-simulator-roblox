@@ -4,8 +4,7 @@
 --   instead, start up when someone gets in, and fart and burble with recorded sounds. Cars with the Pops attribute "brap" on every flat-out upshift, and crackle and pop when you
 --   lift off, with flames out of the exhaust. Tyres squeal when they slide or you brake hard, and the horn
 --   sounds while the driver holds it (the server sets the Horn attribute, see Cars).
---   Body: the body squats when you accelerate, dips its nose when you brake and leans in corners, on the
---   BodyJoint CarBuilder hangs the body off (only cars with a detailed body have one).
+--   Body: stays level, like Birmingham Vehicle Simulator (no squat, dive or lean: it felt floaty).
 -- Sounds made on a device are only heard on that device, so every player's device does this for every car.
 -- For the car you're driving it reads what Driving says the engine is doing (Rpm, Gear, Drive, Throttle,
 -- Upshifts, Downshifts, Slip); for everyone else's car it works it out from how the car is moving (see Gearbox.guess).
@@ -410,32 +409,20 @@ local function updateHorn(engine: Engine)
 	end
 end
 
--- A spring for the body's lean: quick, with a little bounce
-local function spring(value: number, speed: number, target: number, dt: number): (number, number)
-	speed += ((target - value) * 160 - speed * 15) * dt
-	return value + speed * dt, speed
-end
-
 local function update(engine: Engine, dt: number, now: number, mine: boolean)
 	local car, chassis = engine.car, engine.chassis
 	local cframe = chassis.CFrame
 	local velocity = chassis.AssemblyLinearVelocity
 	local forwardSpeed = velocity:Dot(cframe.LookVector)
 	local sideSpeed = velocity:Dot(cframe.RightVector)
-	local yawRate = chassis.AssemblyAngularVelocity:Dot(cframe.UpVector)
 	local accel = (forwardSpeed - engine.lastSpeed) / math.max(dt, 1 / 240)
 	engine.lastSpeed = forwardSpeed
 	engine.accel += (math.clamp(accel, -150, 150) - engine.accel) * math.min(dt * 10, 1)
 
-	-- The body leaning: back down when it pulls away, nose down under braking, outwards in a corner
+	-- The body stays level on the chassis, like Birmingham Vehicle Simulator: no squat, dive or lean
 	local joint = engine.joint
 	if joint then
-		-- Kept subtle, like Birmingham Vehicle Simulator: about 1 degree under hard braking, less pulling away
-		local pitchTarget = math.clamp(engine.accel * 0.00022, -0.018, 0.011)
-		local rollTarget = math.clamp(-forwardSpeed * yawRate * 0.0004, -0.035, 0.035)
-		engine.pitch, engine.pitchSpeed = spring(engine.pitch, engine.pitchSpeed, pitchTarget, dt)
-		engine.roll, engine.rollSpeed = spring(engine.roll, engine.rollSpeed, rollTarget, dt)
-		joint.Transform = CFrame.Angles(engine.pitch, 0, engine.roll)
+		joint.Transform = CFrame.identity
 	end
 
 	-- The engine's only running with someone in the driver's seat

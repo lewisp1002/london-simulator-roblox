@@ -60,13 +60,13 @@ Vehicles.List = {
 	-- Car team
 	-- The cover car: a 2017 hot hatch with a 3.0 turbo straight-six, an 8-speed automatic that farts on every
 	-- flat-out upshift, and real recordings of that engine. About 125 mph, 0-60 in about 3.3 s.
-	{ id = "brenner_140", name = "Brenner 140 Sport", team = "Car", price = 0, style = "hatch", paint = ESTORIL_BLUE, topSpeed = 200, acceleration = 30, brakes = 75, grip = 88, hero = true, seatDrop = 0.8, pops = true, engine = "b58", gears = 8 },
-	-- A big executive estate on its own A-Chassis physics, from a bought pack (see tools/prepare_chassis_cars.luau):
-	-- kept on A-Chassis for now so it can be compared with our own springs and tyres on the 140 and 340
-	{ id = "aurel_sovereign", name = "Aurel Sovereign", team = "Car", price = 0, style = "saloon", topSpeed = 190, acceleration = 26, hero = true, aChassis = true },
+	{ id = "brenner_140", name = "Brenner 140 Sport", team = "Car", price = 0, style = "hatch", paint = ESTORIL_BLUE, topSpeed = 200, acceleration = 30, brakes = 52, grip = 88, hero = true, seatDrop = 0.8, pops = true, engine = "b58", gears = 8 },
+	-- A big executive estate from a bought pack (body made by tools/prepare_vehicle_bodies.luau), on our own springs
+	-- and tyres like the 140 and 340: heavier-feeling, a little less grip, about 120 mph
+	{ id = "aurel_sovereign", name = "Aurel Sovereign", team = "Car", price = 0, style = "saloon", topSpeed = 190, acceleration = 26, brakes = 48, grip = 84, hero = true, seatDrop = 1.2, pops = true, engine = "b58", gears = 8 },
 	-- The quick one, like the blue saloon in Birmingham Vehicle Simulator: about 130 mph flat out, 0-60 in
 	-- about 3 seconds, strong brakes, a blue glow underneath, and pops and bangs from the exhaust
-	{ id = "brenner_340", name = "Brenner 340 Sport", team = "Car", price = 0, style = "saloon", topSpeed = 208, acceleration = 32, brakes = 75, grip = 85, underglow = Color3.fromRGB(40, 90, 255), hero = true, seatDrop = 1.0, pops = true, exhaust = Vector3.new(2.35, 0.85, 8.6), engine = "b58", gears = 8 },
+	{ id = "brenner_340", name = "Brenner 340 Sport", team = "Car", price = 0, style = "saloon", topSpeed = 208, acceleration = 32, brakes = 54, grip = 85, underglow = Color3.fromRGB(40, 90, 255), hero = true, seatDrop = 1.0, pops = true, exhaust = Vector3.new(2.35, 0.85, 8.6), engine = "b58", gears = 8 },
 	{ id = "halden_astor", name = "Halden Astor", team = "Car", price = 0, style = "hatch", topSpeed = 110, acceleration = 14 },
 	{ id = "halden_senator", name = "Halden Senator", team = "Car", price = 0, style = "saloon", topSpeed = 118, acceleration = 15 },
 	{ id = "aurel_comet", name = "Aurel Comet", team = "Car", price = 2500, style = "hatch", topSpeed = 115, acceleration = 15 },

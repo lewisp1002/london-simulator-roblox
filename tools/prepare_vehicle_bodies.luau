@@ -2,7 +2,8 @@
 -- Turns the free Swat Motors Company models into clean vehicle bodies for London Simulator.
 --
 -- How to use it, in Roblox Studio:
---   1. Put the models in ServerStorage → SwatImport (each one keeps a "SourceAssetId" attribute).
+--   1. Put the models in ServerStorage → SwatImport (each one keeps a "SourceAssetId" attribute, or a
+--      "SourceFile" attribute naming the bought file it came from).
 --   2. Paste this whole file into the Command Bar and press Enter.
 --   3. The clean bodies appear in ServerStorage → VehicleBodies, one per vehicle id in Shared → Vehicles.
 --
@@ -44,12 +45,23 @@ local MAP = {
 	-- interior and engine bay (the "M140i" model by IoudM5, uploaded Dec 2023), checked 18 Oct 2026: its scripts
 	-- are A-Chassis and CarPlay (no backdoors found), and all of them are deleted like every model's
 	[15521430429] = "brenner_140",
+	-- Bought: the unmarked car from Lewis's "2022 Audi A6 Pack" (a .rbxm file, so it's keyed by its name). Its 127
+	-- scripts were checked 18 Oct 2026 (A-Chassis, EasyLS emergency lights, a siren panel, no backdoors) and are
+	-- all deleted; its police kit goes too. Never commit or share this model.
+	["2022 Audi A6 Unmarked"] = "aurel_sovereign",
 }
 
 -- Models that aren't Swat Motors' size: the length (in studs) to scale them to, so they match the other cars
 local TARGET_LENGTH = {
 	[14001785089] = 17.6,
 	[15521430429] = 16.2, -- 4.32 m long against the G20's 4.71 m
+	["2022 Audi A6 Unmarked"] = 18.5, -- 4.94 m
+}
+
+-- Groups inside a model that go before anything else (police kit on a car we sell as a civilian one), and the
+-- parts inside them that stay
+local STRIP_GROUPS = {
+	["2022 Audi A6 Unmarked"] = { remove = { "ELS_Related" }, keep = { "Plate" } },
 }
 
 -- Models whose dashboard screens show real maker logos: every picture on their screens is removed
@@ -61,6 +73,9 @@ local STRIP_SCREENS = {
 -- Models whose body colour is shared with their windows and trim, so the most-used colour can't be trusted:
 -- this picks the painted panels instead, from each part and the group it came from in the original model
 local PAINT_PICK = {
+	["2022 Audi A6 Unmarked"] = function(_part: BasePart, group: string): boolean
+		return group == "Skin" -- the painted panels are all in one group
+	end,
 	[15521430429] = function(part: BasePart, group: string): boolean
 		local c = part.Color
 		if math.floor(c.R * 255 + 0.5) ~= 17 or part.Material ~= Enum.Material.SmoothPlastic then
@@ -103,6 +118,17 @@ local RIGHT_HAND_DRIVE = {
 	[15521430429] = { "steer", "cluster", "gauge", "paddle", "stalk" },
 }
 
+-- Lamps found by name, for models whose lamp parts say what they are (word in the part's name → role).
+-- Indicators get IndicatorL / IndicatorR by side, and each headlight also gets a beam.
+local LAMP_NAMES = {
+	["2022 Audi A6 Unmarked"] = { headlight = "Head", taillight = "Tail", indicator = "Indicator" },
+}
+
+-- Models that come with only a driver's seat: a front passenger seat goes on the other side, mirrored
+local MIRROR_PASSENGER = {
+	["2022 Audi A6 Unmarked"] = true,
+}
+
 local LAMP_COLOURS = {
 	Head = Color3.fromRGB(255, 250, 235),
 	Tail = Color3.fromRGB(255, 25, 25),
@@ -137,14 +163,28 @@ local FIXES = {
 }
 
 -- Badges moulded into a model's trim, which can't be deleted on their own: a disc in the body colour goes over
--- them (like a "badge delete" on a real car). Positions are on the finished body (front facing -Z).
+-- them (like a "badge delete" on a real car). Positions are on the finished body (front facing -Z). A cover with
+-- `from` ("front" or "back") is placed where a ray from that end at `at`'s height and side meets the body, so
+-- only X and Y matter; `plate` makes it a flat rectangle of that size instead of a disc, and `color` paints it
+-- that colour instead of the body colour.
 local BADGE_COVERS = {
+	["2022 Audi A6 Unmarked"] = {
+		-- the rings on the grille (part of the grille's one mesh), and the small badge on its right, in grille black.
+		-- The tailgate's rings and lettering are their own part and are deleted instead (DELETE_PARTS).
+		{ from = "front", at = Vector3.new(0, 2.42, 0), normal = Vector3.new(0, 0.23, -0.97), plate = Vector2.new(1.3, 0.58), color = Color3.fromRGB(18, 18, 20) },
+		{ from = "front", at = Vector3.new(1.3, 2.32, 0), normal = Vector3.new(0, 0.23, -0.97), plate = Vector2.new(0.62, 0.22), color = Color3.fromRGB(18, 18, 20) },
+	},
 	[14001785089] = {
 		{ at = Vector3.new(0, 2.55, -8.2), normal = Vector3.new(0, 0.5, -0.87), size = 0.6 }, -- bonnet roundel
 	},
 	[15521430429] = {
 		{ at = Vector3.new(0, 2.56, -7.66), normal = Vector3.new(0, 0.83, -0.55), size = 0.42 }, -- roundel above the grille
 	},
+}
+
+-- Parts deleted by name from the finished body: chrome badges and lettering that are a part of their own
+local DELETE_PARTS = {
+	["2022 Audi A6 Unmarked"] = { "boot_darksilver" }, -- the rings and "A6" / "55 TFSI" on the tailgate
 }
 
 -- Parts near a wheel with these words in their name are suspension, not wheel: they stay still while it spins
@@ -239,21 +279,51 @@ local function sortedDims(size: Vector3): (number, number, number)
 end
 
 local function visibleLength(model: Model): number
+	-- From every corner of every visible part, so a long part lying at an angle counts at its real reach
 	local lo, hi = Vector3.one * math.huge, -Vector3.one * math.huge
 	for _, d in model:GetDescendants() do
 		if d:IsA("BasePart") and d.Transparency < 0.95 then
-			lo = lo:Min(d.Position - d.Size / 2)
-			hi = hi:Max(d.Position + d.Size / 2)
+			local half = d.Size / 2
+			for _, sx in { -1, 1 } do
+				for _, sy in { -1, 1 } do
+					for _, sz in { -1, 1 } do
+						local corner = d.CFrame:PointToWorldSpace(Vector3.new(sx * half.X, sy * half.Y, sz * half.Z))
+						lo = lo:Min(corner)
+						hi = hi:Max(corner)
+					end
+				end
+			end
 		end
 	end
 	local size = hi - lo
 	return math.max(size.X, size.Z)
 end
 
+local function keyOf(source: Instance): any
+	return source:GetAttribute("SourceAssetId") or source:GetAttribute("SourceFile")
+end
+
 local function prepare(source: Model, vehicleId: string): Model
 	local body = source:Clone()
 	body.Name = vehicleId
-	local sourceId = source:GetAttribute("SourceAssetId")
+	local sourceId = keyOf(source)
+	local strip = STRIP_GROUPS[sourceId]
+	if strip then
+		for _, name in strip.remove do
+			for _, group in body:GetDescendants() do
+				if group.Name == name and group.Parent then
+					for _, keepName in strip.keep do
+						for _, keep in group:GetDescendants() do
+							if keep.Name == keepName and keep.Parent then
+								keep.Parent = body
+							end
+						end
+					end
+					group:Destroy()
+				end
+			end
+		end
+	end
 	local target = TARGET_LENGTH[sourceId]
 	if target then
 		body:ScaleTo(body:GetScale() * target / visibleLength(body))
@@ -360,7 +430,7 @@ local function prepare(source: Model, vehicleId: string): Model
 		forward *= Vector3.new(1, 0, 1)
 	end
 	forward = forward.Unit
-	local turn = FORWARD_FIX[body:GetAttribute("SourceAssetId")]
+	local turn = FORWARD_FIX[sourceId]
 	if turn then
 		forward = (CFrame.Angles(0, math.rad(turn), 0) * CFrame.new(forward)).Position.Unit
 	end
@@ -400,6 +470,11 @@ local function prepare(source: Model, vehicleId: string): Model
 	for _, seat in seats do
 		count += 1
 		body:SetAttribute("Seat" .. count, seatSpot(seat))
+	end
+	if MIRROR_PASSENGER[sourceId] and driver then
+		local spot = seatSpot(driver)
+		count += 1
+		body:SetAttribute("Seat" .. count, CFrame.new(-spot.X, spot.Y, spot.Z) * spot.Rotation)
 	end
 	body:SetAttribute("SeatCount", count)
 
@@ -459,6 +534,13 @@ local function prepare(source: Model, vehicleId: string): Model
 	local fix = FIXES[sourceId]
 	if fix then
 		fix(body)
+	end
+	for _, name in DELETE_PARTS[sourceId] or {} do
+		for _, part in body:GetChildren() do
+			if part.Name == name then
+				part:Destroy()
+			end
+		end
 	end
 
 	-- Lights that aren't lamps: A-Chassis "backfire" flash lights hidden by the exhaust (they'd flash as
@@ -520,6 +602,70 @@ local function prepare(source: Model, vehicleId: string): Model
 					end
 				end
 			end
+		end
+	end
+
+	-- Lamps found by name replace whatever was found by colour
+	local named = LAMP_NAMES[sourceId]
+	if named then
+		lamps = 0
+		local beams = {}
+		for _, part in body:GetChildren() do
+			if part:IsA("BasePart") then
+				for _, key in { "LightRole", "OnColor", "OnTransparency", "OffTransparency", "OffMaterial", "OffColor" } do
+					part:SetAttribute(key, nil)
+				end
+				local lower = part.Name:lower()
+				local role = nil
+				for word, r in named do
+					if lower:find(word) then
+						role = r
+					end
+				end
+				if role then
+					local side = if role == "Indicator" then (if part.Position.X < 0 then "IndicatorL" else "IndicatorR") else role
+					part:SetAttribute("LightRole", side)
+					part:SetAttribute("OnColor", LAMP_COLOURS[role])
+					part:SetAttribute("OnTransparency", math.min(part.Transparency, 0.1))
+					part:SetAttribute("OffTransparency", part.Transparency)
+					part:SetAttribute("OffMaterial", part.Material.Name)
+					part:SetAttribute("OffColor", part.Color)
+					lamps += 1
+					if role == "Head" then
+						table.insert(beams, part)
+					end
+				end
+			end
+		end
+		for _, lens in beams do
+			-- An invisible lamp at the front of the headlight that throws the beam down the road
+			local front = lens.Position.Z - lens.Size.Z / 2
+			local at = Vector3.new(lens.Position.X, lens.Position.Y, math.min(front, lens.Position.Z))
+			local part = Instance.new("Part")
+			part.Name = "HeadBeam"
+			part.Size = Vector3.new(0.2, 0.2, 0.05)
+			part.CFrame = CFrame.lookAt(at, at + Vector3.new(0, -0.05, -1))
+			part.Transparency = 1
+			part.Anchored = true
+			part.CanCollide = false
+			part.CanTouch = false
+			part.CanQuery = false
+			part.Massless = true
+			part:SetAttribute("LightRole", "Head")
+			part:SetAttribute("OnColor", LAMP_COLOURS.Head)
+			part:SetAttribute("OnTransparency", 1)
+			part:SetAttribute("OffTransparency", 1)
+			part:SetAttribute("OffMaterial", "SmoothPlastic")
+			part:SetAttribute("OffColor", LAMP_COLOURS.Head)
+			local beam = Instance.new("SpotLight")
+			beam.Face = Enum.NormalId.Front
+			beam.Range = 45
+			beam.Angle = 70
+			beam.Brightness = 4
+			beam.Color = Color3.fromRGB(255, 248, 230)
+			beam.Enabled = false
+			beam.Parent = part
+			part.Parent = body
 		end
 	end
 
@@ -717,21 +863,64 @@ local function prepare(source: Model, vehicleId: string): Model
 			break
 		end
 	end
-	for _, cover in BADGE_COVERS[sourceId] or {} do
+	local covers = BADGE_COVERS[sourceId] or {}
+	local rays: RaycastParams? = nil
+	for _, cover in covers do
+		if cover.from and not rays then
+			-- Rays need the body in the world for a moment
+			body.Parent = workspace
+			for _, part in body:GetChildren() do
+				if part:IsA("BasePart") then
+					part.CanQuery = true
+				end
+			end
+			rays = RaycastParams.new()
+			rays.FilterType = Enum.RaycastFilterType.Include
+			rays.FilterDescendantsInstances = { body }
+		end
+	end
+	local made = {}
+	for _, cover in covers do
 		local n = cover.normal.Unit
+		local at = cover.at
+		if cover.from then
+			local along = if cover.from == "front" then 1 else -1
+			local hit = workspace:Raycast(Vector3.new(at.X, at.Y, -along * 40), Vector3.new(0, 0, along * 80), rays)
+			if not hit then
+				warn(string.format("[Bodies] %s: nothing to cover at %s from the %s", vehicleId, tostring(at), cover.from))
+				continue
+			end
+			at = hit.Position + n * 0.04
+		end
 		local disc = Instance.new("Part")
 		disc.Name = "BadgeCover"
-		disc.Shape = Enum.PartType.Cylinder
-		disc.Size = Vector3.new(0.12, cover.size, cover.size)
-		disc.CFrame = CFrame.fromMatrix(cover.at, n, n:Cross(Vector3.xAxis).Unit)
-		disc.Color = if paintPart then paintPart.Color else Color3.fromRGB(60, 90, 140)
-		disc.Material = if paintPart then paintPart.Material else Enum.Material.SmoothPlastic
+		if cover.plate then
+			disc.Size = Vector3.new(cover.plate.X, cover.plate.Y, 0.06)
+			disc.CFrame = CFrame.lookAt(at, at + n)
+		else
+			disc.Shape = Enum.PartType.Cylinder
+			disc.Size = Vector3.new(0.12, cover.size, cover.size)
+			disc.CFrame = CFrame.fromMatrix(at, n, n:Cross(Vector3.xAxis).Unit)
+		end
+		disc.Color = cover.color or (if paintPart then paintPart.Color else Color3.fromRGB(60, 90, 140))
+		disc.Material = if cover.color then Enum.Material.SmoothPlastic elseif paintPart then paintPart.Material else Enum.Material.SmoothPlastic
 		disc.Anchored = true
 		disc.CanCollide = false
 		disc.CanTouch = false
 		disc.CanQuery = false
 		disc.Massless = true
-		disc:SetAttribute("Paint", true)
+		disc:SetAttribute("Paint", if cover.color then nil else true)
+		table.insert(made, disc)
+	end
+	if rays then
+		for _, part in body:GetChildren() do
+			if part:IsA("BasePart") then
+				part.CanQuery = false
+			end
+		end
+		body.Parent = nil
+	end
+	for _, disc in made do
 		disc.Parent = body
 	end
 
@@ -764,7 +953,7 @@ local out = ServerStorage:FindFirstChild("VehicleBodies") or Instance.new("Folde
 out.Name = "VehicleBodies"
 out:ClearAllChildren() -- start fresh each run
 for _, source in import:GetChildren() do
-	local id = MAP[source:GetAttribute("SourceAssetId")]
+	local id = MAP[keyOf(source)]
 	if id and source:IsA("Model") then
 		local old = out:FindFirstChild(id)
 		if old then

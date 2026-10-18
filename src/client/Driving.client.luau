@@ -22,6 +22,7 @@ local UserInputService = game:GetService("UserInputService")
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 local Gearbox = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Gearbox"))
 local RaycastCar = require(script.Parent:WaitForChild("RaycastCar"))
+local ChaseCamera = require(script.Parent:WaitForChild("ChaseCamera"))
 local carControl = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CarControl") :: RemoteEvent
 
 local CAR = Config.Car
@@ -48,6 +49,7 @@ local TRIGGER_DEADZONE = 0.05
 -- A car standing still is "asleep" to the physics engine, and the first tiny bit of speed gets thrown away,
 -- so pulling away always starts at least this fast (studs per second, about 2 mph)
 local START_SPEED = 3
+local WHEELSPIN_REVS = 1500 -- how far past the road speed's revs the engine goes with the rear wheels spinning flat out
 
 -- Accelerator (+1) or brake / reverse (-1), and steering (-1 left to +1 right), from every kind of input
 local function readPedals(): (number, number)
@@ -248,6 +250,7 @@ local function stopDriving()
 		player.CameraMinZoomDistance = normalMinZoom
 		normalMinZoom = nil
 	end
+	ChaseCamera.stop()
 end
 
 local function startDriving(seat: VehicleSeat)
@@ -275,9 +278,8 @@ local function startDriving(seat: VehicleSeat)
 	end
 	bindKeys(true)
 
-	-- Keep the camera far enough back to see the whole vehicle: a bus is over twice as long as a car
-	normalMinZoom = player.CameraMinZoomDistance
-	player.CameraMinZoomDistance = math.max(normalMinZoom :: number, chassis.Size.Z * 1.25)
+	-- Our own camera that trails the car (see ChaseCamera)
+	ChaseCamera.start(car, chassis, player.Character)
 
 	local topSpeed = stat(car, "TopSpeed", CAR.TopSpeed)
 	local reverseSpeed = stat(car, "ReverseSpeed", CAR.ReverseSpeed)
@@ -300,7 +302,7 @@ local function startDriving(seat: VehicleSeat)
 	local lastShift = 0
 	local upshifts, downshifts = 0, 0
 
-	local connection = RunService.PreSimulation:Connect(function(dt)
+	local connection = RunService.PreSimulation:Connect(function(dt: number)
 		local now = os.clock()
 		local forwardSpeed = chassis.AssemblyLinearVelocity:Dot(chassis.CFrame.LookVector)
 		local throttle, steerInput = readPedals()
@@ -370,17 +372,17 @@ local function startDriving(seat: VehicleSeat)
 		local result = physics:step(dt, input)
 
 		-- For the sounds (VehicleEffects): attributes set here only exist on this device. Spinning wheels rev
-		-- the engine past what the car's speed says.
-		local engineRpm = if result.spinning and throttle > 0 then math.min(Gearbox.REDLINE, rpm + 2200 * throttle) else rpm
+		-- the engine past what the car's speed says, by how hard they're spinning (a little slip barely shows)
+		local engineRpm = math.min(Gearbox.REDLINE, rpm + WHEELSPIN_REVS * result.wheelspin * math.max(throttle, 0))
 		car:SetAttribute("Rpm", math.round(engineRpm))
 		car:SetAttribute("Gear", gear)
 		car:SetAttribute("Drive", math.round(drive * 100) / 100)
 		car:SetAttribute("Throttle", math.round(throttle * 100) / 100)
 		car:SetAttribute("Upshifts", upshifts)
 		car:SetAttribute("Downshifts", downshifts)
-		car:SetAttribute("Spinning", result.spinning)
+		car:SetAttribute("Spinning", result.wheelspin > 0.15)
 		local braking = throttle < 0 and forwardSpeed > 20
-		car:SetAttribute("Slip", math.round(result.slip + (if result.spinning then 18 else 0) + (if braking then 6 else 0)))
+		car:SetAttribute("Slip", math.round(result.slip + 18 * result.wheelspin + (if braking then 6 else 0)))
 	end)
 	driving = {
 		Disconnect = function()
