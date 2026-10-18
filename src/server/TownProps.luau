@@ -24,14 +24,74 @@ function TownProps.lampPost(at: Vector3, towardRoad: Vector3)
 	TownKit.tag(head, "StreetLight")
 end
 
-function TownProps.tree(at: Vector3, scale: number?)
+-- A tree: the mesh tree from the prop kit when the place has it, otherwise one made of parts. `form` stretches
+-- it: "tall" makes a slim, tall tree like the pines in BVS's woods, "wide" a broad spreading one, nil as it is.
+-- Each one is turned a random way, so no two look the same.
+function TownProps.tree(at: Vector3, scale: number?, form: string?)
 	local s = scale or 1
-	local base = Vector3.new(at.X, at.Y, at.Z)
-	post(1.2 * s, 9 * s, base, C.TreeTrunk, Enum.Material.Wood)
+	local hash = (at.X * 12.9898 + at.Z * 78.233) % 1
+	local turn = hash * 2 * math.pi
+	local kitTree = TownKit.prop("Tree", CFrame.new(at) * CFrame.Angles(0, turn, 0))
+	if kitTree then
+		if math.abs(s - 1) > 0.01 then
+			kitTree:ScaleTo(kitTree:GetScale() * s)
+		end
+		local across, up = 1, 1
+		if form == "tall" then
+			across, up = 0.55, 1.65
+		elseif form == "wide" then
+			across, up = 1.35, 0.85
+		end
+		local base = kitTree:GetPivot()
+		for _, part in kitTree:GetDescendants() do
+			if part:IsA("BasePart") then
+				part.CanTouch = false
+				if across ~= 1 or up ~= 1 then
+					-- Stretch about the foot of the tree (it's only turned about the vertical, so this is exact)
+					local offset = base:PointToObjectSpace(part.Position)
+					local stretched = Vector3.new(offset.X * across, offset.Y * up, offset.Z * across)
+					local rotation = part.CFrame - part.Position
+					part.Size = Vector3.new(part.Size.X * across, part.Size.Y * up, part.Size.Z * across)
+					part.CFrame = CFrame.new(base:PointToWorldSpace(stretched)) * rotation
+				end
+				if part.Name == "Leaves" then
+					part.CanCollide = false
+					part.CanQuery = false
+				end
+			end
+		end
+		kitTree.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
+		return
+	end
+	local foot = Vector3.new(at.X, at.Y, at.Z)
+	post(1.2 * s, 9 * s, foot, C.TreeTrunk, Enum.Material.Wood)
 	local leaves = C.Leaves
-	box(Vector3.new(10, 9, 10) * s, CFrame.new(base + Vector3.new(0, 12 * s, 0)), leaves, Enum.Material.Grass, "Part").Shape = Enum.PartType.Ball
-	local top = box(Vector3.new(7, 7, 7) * s, CFrame.new(base + Vector3.new(1.5 * s, 16 * s, -1 * s)), leaves:Lerp(Color3.new(0.3, 0.5, 0.2), 0.15), Enum.Material.Grass)
+	box(Vector3.new(10, 9, 10) * s, CFrame.new(foot + Vector3.new(0, 12 * s, 0)), leaves, Enum.Material.Grass, "Part").Shape = Enum.PartType.Ball
+	local top = box(Vector3.new(7, 7, 7) * s, CFrame.new(foot + Vector3.new(1.5 * s, 16 * s, -1 * s)), leaves:Lerp(Color3.new(0.3, 0.5, 0.2), 0.15), Enum.Material.Grass)
 	top.Shape = Enum.PartType.Ball
+end
+
+-- A bush: the leafy bush from the prop kit, or a green ball
+function TownProps.bush(at: Vector3, scale: number?)
+	local s = scale or 1
+	local turn = ((at.X * 7.31 + at.Z * 3.17) % 1) * 2 * math.pi
+	local kitBush = TownKit.prop("Bush", CFrame.new(at) * CFrame.Angles(0, turn, 0))
+	if kitBush then
+		if math.abs(s - 1) > 0.01 then
+			kitBush:ScaleTo(kitBush:GetScale() * s)
+		end
+		for _, part in kitBush:GetDescendants() do
+			if part:IsA("BasePart") then
+				part.CanCollide = false
+				part.CanQuery = false
+				part.CanTouch = false
+			end
+		end
+		kitBush.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
+		return
+	end
+	local ball = TownKit.detail(Vector3.new(7, 5, 7) * s, CFrame.new(at + Vector3.new(0, 2 * s, 0)), C.Hedge, Enum.Material.LeafyGrass)
+	ball.Shape = Enum.PartType.Ball
 end
 
 -- A tall conifer, for the woods round the edge of the map
@@ -44,8 +104,14 @@ function TownProps.pine(at: Vector3, scale: number)
 	end
 end
 
-function TownProps.bin(at: Vector3)
+local BINS = { "BinHooded", "BinSquare", "BinPark" }
+
+function TownProps.bin(at: Vector3, facing: Vector3?)
 	local base = onPavement(at)
+	local choice = BINS[math.floor(math.abs(at.X * 7 + at.Z * 3)) % #BINS + 1]
+	if TownKit.prop(choice, TownKit.facing(base, facing or Vector3.new(0, 0, -1))) then
+		return
+	end
 	post(1.6, 3.2, base, C.StreetBlack, Enum.Material.Metal)
 	detail(Vector3.new(1.8, 0.3, 1.8), CFrame.new(base + Vector3.new(0, 3.3, 0)), C.Gold, Enum.Material.Metal)
 end
@@ -56,9 +122,12 @@ function TownProps.bollard(at: Vector3)
 	post(0.86, 0.35, base + Vector3.new(0, 2.2, 0), C.White)
 end
 
--- The classic red telephone box
-function TownProps.phoneBox(at: Vector3, facing: Vector3)
+-- A telephone box: the classic red one, or the modern kind from the bought pack
+function TownProps.phoneBox(at: Vector3, facing: Vector3, modern: boolean?)
 	local frame = TownKit.facing(onPavement(at), facing)
+	if modern and TownKit.prop("PhoneBoxModern", frame) then
+		return
+	end
 	box(Vector3.new(3.4, 8, 3.4), frame * CFrame.new(0, 4, 0), C.PostOfficeRed)
 	box(Vector3.new(3.8, 0.8, 3.8), frame * CFrame.new(0, 8.4, 0), C.PostOfficeRed)
 	local panel = detail(Vector3.new(2.6, 4.6, 0.1), frame * CFrame.new(0, 4.3, -1.75), Color3.fromRGB(40, 50, 55), Enum.Material.Glass)
@@ -103,6 +172,10 @@ end
 -- `frame` sits on the kerb edge facing the road.
 function TownProps.busStop(frame: CFrame)
 	local shelter = frame * CFrame.new(0, PAVEMENT_TOP, 5)
+	if TownKit.prop("BusShelter", frame * CFrame.new(0, PAVEMENT_TOP, 5.8)) then
+		TownProps.busFlagAndMarkings(frame)
+		return
+	end
 	local glassColour = Color3.fromRGB(150, 175, 185)
 	local back = detail(Vector3.new(12, 6.5, 0.15), shelter * CFrame.new(0, 3.5, 2), glassColour, Enum.Material.Glass)
 	back.Transparency = 0.55
@@ -113,7 +186,11 @@ function TownProps.busStop(frame: CFrame)
 	end
 	detail(Vector3.new(12.6, 0.3, 4), shelter * CFrame.new(0, 7.6, 0.5), C.StreetBlack, Enum.Material.Metal)
 	box(Vector3.new(8, 0.3, 1.2), shelter * CFrame.new(0, 1.8, 1.4), C.StreetBlack, Enum.Material.Metal)
+	TownProps.busFlagAndMarkings(frame)
+end
 
+-- The red bus stop flag on its pole and the yellow "BUS STOP" box on the road, next to a shelter
+function TownProps.busFlagAndMarkings(frame: CFrame)
 	local pole = frame * CFrame.new(9, PAVEMENT_TOP, 1.2)
 	box(Vector3.new(0.35, 10, 0.35), pole * CFrame.new(0, 5, 0), C.LampGrey, Enum.Material.Metal)
 	local flag = detail(Vector3.new(2.6, 2.6, 0.15), pole * CFrame.new(0, 9, 0) * CFrame.Angles(0, math.pi / 2, 0), Color3.fromRGB(210, 30, 35))
@@ -139,6 +216,15 @@ end
 -- The TrafficLights script finds the lamps by their names (Red, Amber, Green) and the tag.
 function TownProps.trafficLight(frame: CFrame, junctionId: string, axis: string)
 	local base = frame * CFrame.new(0, PAVEMENT_TOP, 0)
+	-- The bought traffic light, if the kit has it (its lamps are already called Red, Amber and Green)
+	local bought = TownKit.prop("TrafficLight", base)
+	if bought then
+		bought.Name = "TrafficLight"
+		bought:SetAttribute("Junction", junctionId)
+		bought:SetAttribute("Axis", axis)
+		TownKit.tag(bought, "TrafficLight")
+		return
+	end
 	box(Vector3.new(0.5, 11, 0.5), base * CFrame.new(0, 5.5, 0), C.LampGrey, Enum.Material.Metal)
 
 	local head = Instance.new("Model")
@@ -222,6 +308,12 @@ end
 -- A yellow speed camera on a grey pole, pointing back along the road at oncoming cars
 function TownProps.speedCamera(frame: CFrame, limit: number)
 	local base = frame * CFrame.new(0, PAVEMENT_TOP, 0)
+	local bought = TownKit.prop("SpeedCamera", base)
+	if bought then
+		bought:SetAttribute("SpeedLimit", limit)
+		TownKit.tag(bought, "SpeedCamera")
+		return
+	end
 	box(Vector3.new(0.6, 10, 0.6), base * CFrame.new(0, 5, 0), C.LampGrey, Enum.Material.Metal)
 	local camera = box(Vector3.new(1.8, 2.2, 3.2), base * CFrame.new(0, 10.4, 0), Color3.fromRGB(245, 205, 30))
 	camera:SetAttribute("SpeedLimit", limit)
@@ -229,14 +321,34 @@ function TownProps.speedCamera(frame: CFrame, limit: number)
 	detail(Vector3.new(1.2, 1.2, 0.1), base * CFrame.new(0, 10.4, -1.62), C.StreetBlack, Enum.Material.Glass)
 end
 
--- A round speed limit sign on a pole
+-- A round speed limit sign on a pole. 70 shows the national speed limit sign.
 function TownProps.limitSign(at: Vector3, facing: Vector3, limit: number)
 	local frame = TownKit.facing(onPavement(at), facing)
+	if TownKit.prop(if limit >= 70 then "NationalLimit" else "Limit" .. limit, frame) then
+		return
+	end
 	box(Vector3.new(0.3, 8, 0.3), frame * CFrame.new(0, 4, 0), C.LampGrey, Enum.Material.Metal)
 	local disc = detail(Vector3.new(0.15, 2.6, 2.6), frame * CFrame.new(0, 8.6, -0.2) * CFrame.Angles(0, math.pi / 2, 0), Color3.fromRGB(210, 30, 30))
 	disc.Shape = Enum.PartType.Cylinder
 	local face = detail(Vector3.new(1.9, 1.9, 0.05), frame * CFrame.new(0, 8.6, -0.3), C.White)
 	TownKit.text(face, Enum.NormalId.Front, tostring(limit), Color3.new(0, 0, 0))
+end
+
+-- A road sign from the bought pack ("GiveWay", "NoEntry", "OneWay", "MiniRoundabout", "SpeedCameraSign"),
+-- standing at `at` (its height is used, so it works on islands and bridges) with its face towards `facing`
+function TownProps.sign(name: string, at: Vector3, facing: Vector3): boolean
+	return TownKit.prop(name, TownKit.facing(at, facing)) ~= nil
+end
+
+-- A black and yellow keep-left bollard on the nose of a traffic island, facing the traffic coming at it
+function TownProps.keepLeft(at: Vector3, facing: Vector3)
+	TownKit.prop("KeepLeft", TownKit.facing(at, facing))
+end
+
+-- A white arrow painted on the road. `direction` is the way the traffic is going.
+-- (The arrows in the pack point along +Z, so they're turned to face back the other way.)
+function TownProps.laneArrow(at: Vector3, direction: Vector3, name: string?)
+	TownKit.prop(name or "ArrowAhead", TownKit.facing(Vector3.new(at.X, at.Y + 0.03, at.Z), -direction))
 end
 
 return TownProps

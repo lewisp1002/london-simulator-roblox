@@ -7,6 +7,7 @@
 local DataStoreService = game:GetService("DataStoreService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Vehicles = require(ReplicatedStorage.Shared.Vehicles)
@@ -104,6 +105,12 @@ local function onPlayerAdded(player: Player)
 	for _, id in data.owned do
 		player:SetAttribute("Owned_" .. id, true)
 	end
+	-- Testing in Studio: show every vehicle as owned, without adding them to the save
+	if RunService:IsStudio() and Config.UnlockEverythingInStudio then
+		for _, vehicle in Vehicles.List do
+			player:SetAttribute("Owned_" .. vehicle.id, true)
+		end
+	end
 	for id, paint in data.paints do
 		player:SetAttribute("Paint_" .. id, paint)
 	end
@@ -158,7 +165,7 @@ function PlayerData.owns(player: Player, vehicleId: string): boolean
 	if not vehicle then
 		return false
 	end
-	if vehicle.price == 0 then
+	if vehicle.price == 0 or (RunService:IsStudio() and Config.UnlockEverythingInStudio) then
 		return true
 	end
 	local session = sessions[player]

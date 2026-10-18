@@ -104,7 +104,8 @@ local function isOwned(vehicle: Vehicle): boolean
 	return vehicle.price == 0 or player:GetAttribute("Owned_" .. vehicle.id) == true
 end
 
-local function paintOf(vehicle: Vehicle): Color3
+-- nil means the vehicle keeps its own colours
+local function paintOf(vehicle: Vehicle): Color3?
 	local picked = player:GetAttribute("Paint_" .. vehicle.id)
 	return Vehicles.paintColour(vehicle, if typeof(picked) == "number" then picked else nil)
 end
@@ -114,10 +115,16 @@ local function cash(): number
 	return if typeof(value) == "number" then value else 0
 end
 
-local function recolour(model: Instance, colour: Color3)
+-- Repaints a vehicle's body panels, or puts its original colours back when `colour` is nil
+local function recolour(model: Instance, colour: Color3?)
 	for _, descendant in model:GetDescendants() do
 		if descendant:IsA("BasePart") and descendant:GetAttribute("Paint") then
-			descendant.Color = colour
+			local original = descendant:GetAttribute("BaseColour")
+			if colour then
+				descendant.Color = colour
+			elseif typeof(original) == "Color3" then
+				descendant.Color = original
+			end
 		end
 	end
 end

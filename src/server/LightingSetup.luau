@@ -31,12 +31,13 @@ function LightingSetup.apply()
 	Lighting.ExposureCompensation = 0.1
 
 	local atmosphere = freshEffect("Atmosphere", Lighting) :: Atmosphere
-	atmosphere.Density = 0.3
-	atmosphere.Offset = 0.1
-	atmosphere.Color = Color3.fromRGB(199, 199, 199)
-	atmosphere.Decay = Color3.fromRGB(106, 112, 125)
-	atmosphere.Glare = 0.2
-	atmosphere.Haze = 1.2
+	-- Thick enough that the far end of a street fades into grey, like BVS, so the city seems to go on forever
+	atmosphere.Density = 0.36
+	atmosphere.Offset = 0.2
+	atmosphere.Color = Color3.fromRGB(202, 204, 208)
+	atmosphere.Decay = Color3.fromRGB(112, 118, 130)
+	atmosphere.Glare = 0.15
+	atmosphere.Haze = 1.7
 
 	local bloom = freshEffect("BloomEffect", Lighting) :: BloomEffect
 	bloom.Intensity = 0.5

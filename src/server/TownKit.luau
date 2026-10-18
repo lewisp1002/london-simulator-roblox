@@ -1,7 +1,8 @@
 -- Basic building blocks for the test town: anchored parts, road paint and signs with words on them.
--- TownProps, TownBuildings and TestTown all use these, so the whole town shares one set of colours and heights.
+-- TownProps, TownBuildings, RoadKit and LondonMap all use these, so the whole town shares one set of colours and heights.
 
 local CollectionService = game:GetService("CollectionService")
+local ServerStorage = game:GetService("ServerStorage")
 
 local TownKit = {}
 
@@ -12,11 +13,12 @@ TownKit.PAVEMENT_TOP = TownKit.ROAD_TOP + TownKit.KERB_HEIGHT
 TownKit.FLOOR = 11 -- one storey of a building
 
 TownKit.Colours = {
-	Asphalt = Color3.fromRGB(58, 58, 62),
+	Asphalt = Color3.fromRGB(150, 150, 153), -- light grainy grey, like Birmingham Vehicle Simulator's roads
 	White = Color3.fromRGB(235, 235, 232),
 	Yellow = Color3.fromRGB(240, 190, 20),
-	Pavement = Color3.fromRGB(168, 165, 158),
-	Kerb = Color3.fromRGB(140, 138, 132),
+	Pavement = Color3.fromRGB(206, 196, 186), -- the Pavement material draws herringbone block paving, like BVS
+	RedPaving = Color3.fromRGB(176, 112, 100), -- block paving on the high streets
+	Kerb = Color3.fromRGB(152, 150, 144),
 	Grass = Color3.fromRGB(78, 128, 58),
 	Hedge = Color3.fromRGB(45, 90, 40),
 	PostOfficeRed = Color3.fromRGB(200, 16, 30),
@@ -112,7 +114,7 @@ function TownKit.text(host: BasePart, face: Enum.NormalId, text: string, colour:
 	surface.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 	surface.PixelsPerStud = 30
 	surface.LightInfluence = 0.8
-	surface.MaxDistance = 400 -- don't bother drawing words nobody's close enough to read
+	surface.MaxDistance = 220 -- don't bother drawing words nobody's close enough to read
 	surface.Parent = host
 
 	local label = Instance.new("TextLabel")
@@ -137,6 +139,20 @@ end
 
 function TownKit.tag(instance: Instance, tagName: string)
 	CollectionService:AddTag(instance, tagName)
+end
+
+-- A copy of a prop from the bought packs (ServerStorage → PropKit, made by tools/prepare_prop_kit.luau),
+-- standing at `cframe` with its front facing the way `cframe` faces. nil if the kit doesn't have it.
+function TownKit.prop(name: string, cframe: CFrame): Model?
+	local kit = ServerStorage:FindFirstChild("PropKit")
+	local template = kit and kit:FindFirstChild(name)
+	if not template or not template:IsA("Model") then
+		return nil
+	end
+	local model = template:Clone()
+	model:PivotTo(cframe)
+	model.Parent = folder
+	return model
 end
 
 -- A CFrame at `position` facing `direction` (flattened so it's level)

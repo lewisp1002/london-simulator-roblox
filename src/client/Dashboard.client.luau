@@ -2,16 +2,18 @@
 --   bottom left: a panel with your speed in mph, the speed limit, the day and time, and a minimap
 --     of the roads around you (other players are blue dots, you're the white arrow in the middle)
 --   right: the driving controls list
--- The minimap reads the roads from ReplicatedStorage → MapInfo → Minimap, which TestTown writes.
+-- The minimap reads the roads from ReplicatedStorage → MapInfo → Minimap, which LondonMap writes.
 
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
 local Ui = require(script.Parent:WaitForChild("Ui"))
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
+local Gearbox = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Gearbox"))
 
 local LIMIT_CHECK_SECONDS = 0.25
 local MAP_SCALE = 0.32 -- pixels per stud
@@ -60,6 +62,26 @@ local clockLabel = Ui.label("", 12, Enum.FontWeight.Medium, {
 	Parent = panel,
 })
 
+-- The gear you're in, under the time, and a rev counter: a thin bar along the top of the map that fills
+-- up as the engine revs and goes red near the redline (Driving puts Rpm and Gear on your car)
+local gearLabel = Ui.label("", 12, Enum.FontWeight.Bold, {
+	AnchorPoint = Vector2.new(1, 0),
+	Position = UDim2.new(1, -16, 0, 32),
+	Size = UDim2.fromOffset(120, 16),
+	TextXAlignment = Enum.TextXAlignment.Right,
+	Parent = panel,
+})
+local revTrack = Ui.make("Frame", {
+	Position = UDim2.fromOffset(16, MAP_TOP - 6),
+	Size = UDim2.new(1, -32, 0, 3),
+	BackgroundColor3 = Color3.fromRGB(70, 74, 82),
+	BorderSizePixel = 0,
+	Parent = panel,
+})
+Ui.corner(revTrack, 2)
+local revFill = Ui.make("Frame", { Size = UDim2.fromScale(0, 1), BorderSizePixel = 0, Parent = revTrack })
+Ui.corner(revFill, 2)
+
 -- The map: a CanvasGroup clips it to the rounded panel even when it's turned
 local mapWindow = Ui.make("CanvasGroup", {
 	Position = UDim2.fromOffset(0, MAP_TOP),
@@ -80,11 +102,97 @@ local ROAD_COLOURS = {
 	side = Color3.fromRGB(120, 124, 132),
 	main = Color3.fromRGB(165, 168, 176),
 	dual = Color3.fromRGB(200, 202, 210),
+	motorway = Color3.fromRGB(95, 150, 225),
 	yard = Color3.fromRGB(70, 74, 82),
 	water = Color3.fromRGB(45, 85, 130),
 	park = Color3.fromRGB(40, 85, 50),
 }
-local ROAD_ORDER = { water = 1, park = 1, yard = 2, side = 3, main = 4, dual = 5 }
+local ROAD_ORDER = { water = 1, park = 1, yard = 2, side = 3, main = 4, dual = 5, motorway = 6 }
+local ROADS = { side = true, main = true, dual = true, motorway = true }
+
+-- One thing on the map. Entries are:
+--   { "l", x1, z1, x2, z2, width, kind }  a straight line (roads, the river)
+--   { "c", x, z, radius, kind }           a circle (roundabouts)
+--   { "q", x, z, width, depth, degrees, kind }  a turned rectangle (depots)
+--   { x, z, sizeX, sizeZ, kind }           a rectangle (parks)
+-- Every drawn thing with where it is, so the ones outside the little map window can be hidden: thousands
+-- of frames redrawn every frame inside the CanvasGroup made the game lag
+type Drawn = { frame: Frame, x: number, z: number, reach: number }
+local drawn: { Drawn } = {}
+
+local function drawEntry(entry: { any })
+	local kind: string
+	local frame: Frame
+	local cx, cz, reach = 0, 0, 0
+	if entry[1] == "l" then
+		local x1, z1, x2, z2, width = entry[2], entry[3], entry[4], entry[5], entry[6]
+		kind = entry[7]
+		local dx, dz = x2 - x1, z2 - z1
+		local length = math.sqrt(dx * dx + dz * dz)
+		cx, cz, reach = (x1 + x2) / 2, (z1 + z2) / 2, length / 2 + width
+		-- Draw roads thinner than they really are so the map stays readable
+		local thickness = if ROADS[kind] then math.max(3, width * MAP_SCALE * 0.55) else width * MAP_SCALE
+		frame = Ui.make("Frame", {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromOffset((x1 + x2) / 2 * MAP_SCALE, (z1 + z2) / 2 * MAP_SCALE),
+			-- A little longer than the line so the pieces of a curve overlap
+			Size = UDim2.fromOffset(length * MAP_SCALE + thickness * 0.5, thickness),
+			Rotation = math.deg(math.atan2(dz, dx)),
+			BorderSizePixel = 0,
+			Parent = world,
+		})
+	elseif entry[1] == "c" then
+		local radius = entry[4]
+		kind = entry[5]
+		cx, cz, reach = entry[2], entry[3], radius
+		frame = Ui.make("Frame", {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromOffset(entry[2] * MAP_SCALE, entry[3] * MAP_SCALE),
+			Size = UDim2.fromOffset(radius * 2 * MAP_SCALE, radius * 2 * MAP_SCALE),
+			BorderSizePixel = 0,
+			Parent = world,
+		})
+		Ui.corner(frame, radius * MAP_SCALE)
+	elseif entry[1] == "q" then
+		kind = entry[7]
+		cx, cz, reach = entry[2], entry[3], math.max(entry[4], entry[5])
+		frame = Ui.make("Frame", {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromOffset(entry[2] * MAP_SCALE, entry[3] * MAP_SCALE),
+			Size = UDim2.fromOffset(entry[4] * MAP_SCALE, entry[5] * MAP_SCALE),
+			Rotation = -entry[6],
+			BorderSizePixel = 0,
+			Parent = world,
+		})
+	else
+		kind = entry[5]
+		cx, cz, reach = entry[1], entry[2], math.max(entry[3], entry[4])
+		frame = Ui.make("Frame", {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromOffset(entry[1] * MAP_SCALE, entry[2] * MAP_SCALE),
+			Size = UDim2.fromOffset(entry[3] * MAP_SCALE, entry[4] * MAP_SCALE),
+			BorderSizePixel = 0,
+			Parent = world,
+		})
+	end
+	frame.BackgroundColor3 = ROAD_COLOURS[kind] or ROAD_COLOURS.side
+	frame.ZIndex = ROAD_ORDER[kind] or 3
+	frame.BackgroundTransparency = if kind == "yard" then 0.4 else 0
+	frame.Visible = false
+	table.insert(drawn, { frame = frame, x = cx, z = cz, reach = reach })
+end
+
+-- How far from you the map window can show, in studs (corner to corner, with room for turning)
+local VIEW = math.sqrt(PANEL_WIDTH ^ 2 + PANEL_HEIGHT ^ 2) / MAP_SCALE * 0.6
+local sinceCull = math.huge
+
+local function cull(position: Vector3)
+	for _, item in drawn do
+		local dx, dz = item.x - position.X, item.z - position.Z
+		local near = VIEW + item.reach
+		item.frame.Visible = dx * dx + dz * dz < near * near
+	end
+end
 
 local function drawMap()
 	local mapInfo = ReplicatedStorage:WaitForChild("MapInfo", 30)
@@ -92,29 +200,14 @@ local function drawMap()
 	if not data or not data:IsA("StringValue") then
 		return
 	end
-	local ok, rects = pcall(function(): any
+	local ok, entries = pcall(function(): any
 		return HttpService:JSONDecode(data.Value)
 	end)
-	if not ok or type(rects) ~= "table" then
+	if not ok or type(entries) ~= "table" then
 		return
 	end
-	for _, rect in rects do
-		local x, z, sizeX, sizeZ, kind = rect[1], rect[2], rect[3], rect[4], rect[5]
-		local isRoad = kind == "side" or kind == "main" or kind == "dual"
-		-- Draw roads thinner than they really are so the map stays readable
-		local thin = if isRoad then 0.55 else 1
-		local width = if isRoad and sizeX < sizeZ then math.max(3, sizeX * MAP_SCALE * thin) else sizeX * MAP_SCALE
-		local height = if isRoad and sizeZ <= sizeX then math.max(3, sizeZ * MAP_SCALE * thin) else sizeZ * MAP_SCALE
-		local frame = Ui.make("Frame", {
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.fromOffset(x * MAP_SCALE, z * MAP_SCALE),
-			Size = UDim2.fromOffset(width, height),
-			BackgroundColor3 = ROAD_COLOURS[kind] or ROAD_COLOURS.side,
-			BorderSizePixel = 0,
-			ZIndex = ROAD_ORDER[kind] or 3,
-			Parent = world,
-		})
-		frame.BackgroundTransparency = if kind == "yard" then 0.4 else 0
+	for _, entry in entries do
+		drawEntry(entry)
 	end
 end
 task.spawn(drawMap)
@@ -161,7 +254,7 @@ end)
 local controlsList = Ui.make("Frame", {
 	AnchorPoint = Vector2.new(1, 1),
 	Position = UDim2.new(1, -16, 1, -16),
-	Size = UDim2.fromOffset(220, 0),
+	Size = UDim2.fromOffset(300, 0),
 	AutomaticSize = Enum.AutomaticSize.Y,
 	BackgroundTransparency = 1,
 	Parent = gui,
@@ -169,37 +262,65 @@ local controlsList = Ui.make("Frame", {
 Ui.make("UIListLayout", { Padding = UDim.new(0, 7), HorizontalAlignment = Enum.HorizontalAlignment.Right, SortOrder = Enum.SortOrder.LayoutOrder, Parent = controlsList })
 
 local blueLightsRow: Frame? = nil
+-- Each control's key on a keyboard, then its button on a controller
+local keyLabels: { { label: TextLabel, keyboard: string, gamepad: string } } = {}
 for order, control in {
-	{ "Steering", "WASD" },
-	{ "Handbrake", "Space" },
-	{ "Indicators", "Q-E" },
-	{ "Hazards", "B" },
-	{ "Lights", "L" },
-	{ "Blue lights", "R" },
-	{ "Get out", "F" },
+	{ "Steering", "WASD", "Stick + RT / LT" },
+	{ "Handbrake", "Space", "A" },
+	{ "Indicators", "Q-E", "D-pad left / right" },
+	{ "Hazards", "B", "D-pad down" },
+	{ "Lights", "L", "D-pad up" },
+	{ "Blue lights", "R", "X" },
+	{ "Horn", "H", "Press left stick" },
+	{ "Get out", "F", "Y" },
 } do
+	-- The action name and its key side by side, lined up on the right, however long the key's name is
 	local row = Ui.make("Frame", { Size = UDim2.new(1, 0, 0, 28), BackgroundTransparency = 1, LayoutOrder = order, Parent = controlsList })
+	Ui.make("UIListLayout", {
+		FillDirection = Enum.FillDirection.Horizontal,
+		HorizontalAlignment = Enum.HorizontalAlignment.Right,
+		VerticalAlignment = Enum.VerticalAlignment.Center,
+		Padding = UDim.new(0, 10),
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Parent = row,
+	})
 	local key = Ui.label(control[2], 13, Enum.FontWeight.Medium, {
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.fromScale(1, 0),
 		Size = UDim2.fromOffset(0, 28),
 		AutomaticSize = Enum.AutomaticSize.X,
+		LayoutOrder = 2,
 		Parent = row,
 	})
 	Ui.padding(key, 9, 0)
 	Ui.corner(key, 14)
 	Ui.make("UIStroke", { ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Color = Color3.new(1, 1, 1), Thickness = 1.5, Parent = key })
 	local action = Ui.label(control[1], 14, Enum.FontWeight.Regular, {
-		Size = UDim2.new(1, -70, 1, 0),
+		Size = UDim2.fromOffset(0, 28),
+		AutomaticSize = Enum.AutomaticSize.X,
 		TextXAlignment = Enum.TextXAlignment.Right,
+		LayoutOrder = 1,
 		Parent = row,
 	})
 	action.TextStrokeTransparency = 0.6
 	key.TextStrokeTransparency = 0.7
+	table.insert(keyLabels, { label = key, keyboard = control[2], gamepad = control[3] })
 	if control[1] == "Blue lights" then
 		blueLightsRow = row
 	end
 end
+
+-- Show controller buttons when you're using a controller, keys when you're using the keyboard
+local function showInputType(inputType: Enum.UserInputType)
+	local isGamepad = inputType.Name:sub(1, 7) == "Gamepad"
+	local isKeyboard = inputType == Enum.UserInputType.Keyboard or inputType.Name:sub(1, 5) == "Mouse"
+	if not isGamepad and not isKeyboard then
+		return
+	end
+	for _, entry in keyLabels do
+		entry.label.Text = if isGamepad then entry.gamepad else entry.keyboard
+	end
+end
+UserInputService.LastInputTypeChanged:Connect(showInputType)
+showInputType(UserInputService:GetLastInputType())
 
 local function applyControlsSetting()
 	controlsList.Visible = Ui.settings.Controls
@@ -249,8 +370,23 @@ RunService.Heartbeat:Connect(function(dt)
 	limitSign.Position = UDim2.fromOffset(16 + speedWidth + 38, 12)
 	limitLabel.Text = if speedLimit then tostring(speedLimit) else ""
 
+	local rpm, gear = car:GetAttribute("Rpm"), car:GetAttribute("Gear")
+	if typeof(rpm) == "number" and typeof(gear) == "number" then
+		local share = Gearbox.share(rpm)
+		revFill.Size = UDim2.fromScale(share, 1)
+		revFill.BackgroundColor3 = if rpm >= Gearbox.UP_AT then C.Red else C.Text
+		gearLabel.Text = if gear <= 0 then "R" else "Gear " .. gear
+	end
+	revTrack.Visible = typeof(rpm) == "number"
+	gearLabel.Visible = typeof(gear) == "number"
+
 	-- Slide and turn the map so you're in the middle, facing up
 	local position = seat.Position
+	sinceCull += dt
+	if sinceCull > 0.4 then
+		sinceCull = 0
+		cull(position)
+	end
 	world.Position = UDim2.fromOffset(-position.X * MAP_SCALE, -position.Z * MAP_SCALE)
 	local look = seat.CFrame.LookVector
 	pivot.Rotation = if Ui.settings.TurnMap then -90 - math.deg(math.atan2(look.Z, look.X)) else 0

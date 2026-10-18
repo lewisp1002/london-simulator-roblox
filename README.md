@@ -20,7 +20,7 @@ A UK driving and roleplay game for Roblox, set in London.
 
 Art (not code, built in Studio or Blender, or found on the Creator Store):
 
-- [ ] **The London map** – real streets and landmarks to replace the test town
+- [ ] **The London map** – step 1 done: the road network (motorway with three junctions, the Westway flyover, ring roads, roundabouts, four bridges, laybys, UK markings) with stand-in buildings. Next: proper UK buildings, street furniture and people, then backgrounds and textures
 - [ ] **Vehicle models** – proper cars, buses, police cars and ambulances
 
 ## Getting the code into Roblox Studio

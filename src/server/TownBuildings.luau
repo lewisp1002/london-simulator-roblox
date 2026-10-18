@@ -125,51 +125,55 @@ function TownBuildings.plainRow(frame: CFrame, length: number, depth: number, fl
 	box(Vector3.new(length + 0.4, 1, 1.2), frame * CFrame.new(0, height - 0.5, -0.3), C.Stone, Enum.Material.Limestone)
 end
 
--- An office block or tower of flats. `style` is "glass", "stone" or "concrete".
-function TownBuildings.tower(centre: Vector3, sizeX: number, sizeZ: number, height: number, style: string)
+-- An office block or tower of flats. `style` is "glass", "stone" or "concrete". `facing` turns it to face
+-- a road (its front is the side facing that way); it faces north if left out.
+function TownBuildings.tower(centre: Vector3, sizeX: number, sizeZ: number, height: number, style: string, facing: Vector3?)
 	local base = Vector3.new(centre.X, PAVEMENT_TOP, centre.Z)
-	local middle = CFrame.new(base + Vector3.new(0, height / 2, 0))
+	local orient = if facing then TownKit.facing(base, facing) else CFrame.new(base)
+	local function at(x: number, y: number, z: number): CFrame
+		return orient * CFrame.new(x, y, z)
+	end
 	local floors = math.floor(height / FLOOR)
+	-- A plinth so the building meets the ground cleanly
+	box(Vector3.new(sizeX + 4, PAVEMENT_TOP, sizeZ + 4), at(0, -PAVEMENT_TOP / 2, 0), C.Pavement, Enum.Material.Pavement)
 
 	if style == "glass" then
-		local body = box(Vector3.new(sizeX, height, sizeZ), middle, C.Glass, Enum.Material.Glass)
+		local body = box(Vector3.new(sizeX, height, sizeZ), at(0, height / 2, 0), C.Glass, Enum.Material.Glass)
 		body.Reflectance = 0.3
 		for floor = 1, floors - 1 do
-			detail(Vector3.new(sizeX + 0.5, 0.8, sizeZ + 0.5), CFrame.new(base + Vector3.new(0, floor * FLOOR, 0)), Color3.fromRGB(200, 202, 206), Enum.Material.Metal)
+			detail(Vector3.new(sizeX + 0.5, 0.8, sizeZ + 0.5), at(0, floor * FLOOR, 0), Color3.fromRGB(200, 202, 206), Enum.Material.Metal)
 		end
 		local mullions = math.floor(sizeX / 10)
 		for i = 1, mullions - 1 do
 			local x = -sizeX / 2 + i * sizeX / mullions
 			for _, z in { -sizeZ / 2 - 0.2, sizeZ / 2 + 0.2 } do
-				detail(Vector3.new(0.5, height, 0.4), CFrame.new(base + Vector3.new(x, height / 2, z)), Color3.fromRGB(175, 178, 184), Enum.Material.Metal)
+				detail(Vector3.new(0.5, height, 0.4), at(x, height / 2, z), Color3.fromRGB(175, 178, 184), Enum.Material.Metal)
 			end
 		end
 	else
 		local wall = if style == "stone" then C.Portland else C.Concrete
 		local material = if style == "stone" then Enum.Material.Limestone else Enum.Material.Concrete
-		box(Vector3.new(sizeX, height, sizeZ), middle, wall, material)
+		box(Vector3.new(sizeX, height, sizeZ), at(0, height / 2, 0), wall, material)
 		for floor = 0, floors - 1 do
-			window(Vector3.new(sizeX + 0.3, 5, sizeZ + 0.3), CFrame.new(base + Vector3.new(0, floor * FLOOR + 5.5, 0)))
+			window(Vector3.new(sizeX + 0.3, 5, sizeZ + 0.3), at(0, floor * FLOOR + 5.5, 0))
 		end
 		local spacing = if style == "stone" then 6 else 8
-		for _, along in { "x", "z" } do
-			local span = if along == "x" then sizeX else sizeZ
-			local across = if along == "x" then sizeZ else sizeX
+		for _, alongX in { true, false } do
+			local span = if alongX then sizeX else sizeZ
+			local across = if alongX then sizeZ else sizeX
 			local count = math.floor(span / spacing)
 			for i = 1, count - 1 do
 				local offset = -span / 2 + i * span / count
 				for _, side in { -1, 1 } do
-					local position = if along == "x"
-						then Vector3.new(offset, height / 2, side * (across / 2 + 0.25))
-						else Vector3.new(side * (across / 2 + 0.25), height / 2, offset)
-					local size = if along == "x" then Vector3.new(1.6, height, 0.6) else Vector3.new(0.6, height, 1.6)
-					box(size, CFrame.new(base + position), wall, material)
+					local cframe = if alongX then at(offset, height / 2, side * (across / 2 + 0.25)) else at(side * (across / 2 + 0.25), height / 2, offset)
+					local size = if alongX then Vector3.new(1.6, height, 0.6) else Vector3.new(0.6, height, 1.6)
+					box(size, cframe, wall, material)
 				end
 			end
 		end
 	end
 	-- Lift motor room on the roof
-	box(Vector3.new(sizeX * 0.4, 8, sizeZ * 0.4), CFrame.new(base + Vector3.new(0, height + 4, 0)), C.Concrete, Enum.Material.Concrete)
+	box(Vector3.new(sizeX * 0.4, 8, sizeZ * 0.4), at(0, height + 4, 0), C.Concrete, Enum.Material.Concrete)
 end
 
 -- Grass, paths, a pond, trees and benches inside a low hedge
@@ -276,7 +280,7 @@ function TownBuildings.plaza(minX: number, maxX: number, minZ: number, maxZ: num
 	TownProps.postBox(Vector3.new(maxX - 6, 0, maxZ - 8), Vector3.new(1, 0, 0))
 end
 
--- A clock face for the clock tower. The server turns the hands to London time (see TestTown).
+-- A clock face for the clock tower. The server turns the hands to London time (see LondonMap).
 local function clockFace(host: BasePart, face: Enum.NormalId)
 	local surface = Instance.new("SurfaceGui")
 	surface.Face = face
@@ -426,27 +430,53 @@ function TownBuildings.palace(frame: CFrame, length: number, depth: number)
 	end
 end
 
--- Big flat-roofed shed with columns, for the bus garage and the petrol station canopy
-local function canopy(centre: Vector3, sizeX: number, sizeZ: number, height: number, roofColour: Color3, columns: { Vector3 })
-	box(Vector3.new(sizeX, 1.6, sizeZ), CFrame.new(centre + Vector3.new(0, height, 0)), roofColour, Enum.Material.Metal)
+-- Depots and big sites. Each one is built in its own "frame": the middle of the site's front edge at ground
+-- level, facing the road. Local x runs across the site, and +z goes back away from the road.
+
+-- A flat roof on columns, for the bus garage and the petrol station canopy
+local function canopy(frame: CFrame, sizeX: number, sizeZ: number, height: number, roofColour: Color3, columns: { Vector3 })
+	box(Vector3.new(sizeX, 1.6, sizeZ), frame * CFrame.new(0, height, 0), roofColour, Enum.Material.Metal)
 	for _, offset in columns do
-		box(Vector3.new(1.4, height, 1.4), CFrame.new(centre + offset + Vector3.new(0, height / 2, 0)), Color3.fromRGB(220, 220, 222), Enum.Material.Metal)
+		box(Vector3.new(1.4, height, 1.4), frame * CFrame.new(offset.X, height / 2, offset.Z), Color3.fromRGB(220, 220, 222), Enum.Material.Metal)
 	end
 end
 
--- Parking bays painted on a yard
-local function bays(from: Vector3, step: Vector3, count: number, length: number, along: Vector3)
+-- White lines between parking bays, `count` bays wide, each `spacing` across and `length` deep
+local function bays(frame: CFrame, firstX: number, spacing: number, count: number, length: number, z: number)
 	for i = 0, count do
-		local at = from + step * i
-		local line = TownKit.paint(0.5, length, at)
-		line.CFrame = TownKit.facing(Vector3.new(at.X, ROAD_TOP + 0.02, at.Z), along)
+		local line = TownKit.paint(0.5, length, Vector3.zero)
+		line.CFrame = frame * CFrame.new(firstX + i * spacing, ROAD_TOP + 0.02, z)
 	end
+end
+
+-- Tarmac over the whole site, at road level so you can drive straight in
+local function yard(frame: CFrame, width: number, depth: number): BasePart
+	local surface = box(Vector3.new(width, 1, depth), frame * CFrame.new(0, ROAD_TOP - 0.5, depth / 2), C.Asphalt, Enum.Material.Asphalt)
+	surface:SetAttribute("SpeedLimit", 10)
+	return surface
+end
+
+local function spawnSpot(frame: CFrame, x: number, z: number, size: Vector3, depot: Model)
+	local spot = detail(size, frame * CFrame.new(x, ROAD_TOP, z), C.White)
+	spot.Name = "Spawn"
+	spot.Transparency = 1
+	spot.Parent = depot
 end
 
 -- The Car team's depot: a petrol station forecourt with pumps, a canopy and a mini market
-function TownBuildings.petrolStation(minX: number, maxX: number, minZ: number, maxZ: number, depot: Model)
-	local centreX = (minX + maxX) / 2
-	local forecourt = Vector3.new(centreX, ROAD_TOP, minZ + 80)
+function TownBuildings.petrolStation(frame: CFrame, width: number, depth: number, depot: Model)
+	yard(frame, width, depth)
+	-- Parking spaces along the front, cars facing the road
+	local spacing = 14
+	local count = math.floor((width - 40) / spacing)
+	local firstX = -count * spacing / 2
+	bays(frame, firstX, spacing, count, 20, 26)
+	for i = 0, count - 1 do
+		spawnSpot(frame, firstX + (i + 0.5) * spacing, 26, Vector3.new(6, 1, 14), depot)
+	end
+
+	-- The forecourt
+	local forecourt = frame * CFrame.new(0, ROAD_TOP, depth * 0.5)
 	local columns = {}
 	for _, x in { -30, 0, 30 } do
 		for _, z in { -16, 16 } do
@@ -454,104 +484,152 @@ function TownBuildings.petrolStation(minX: number, maxX: number, minZ: number, m
 		end
 	end
 	canopy(forecourt, 76, 44, 17, Color3.fromRGB(235, 235, 235), columns)
-	detail(Vector3.new(76.4, 2.6, 44.4), CFrame.new(forecourt + Vector3.new(0, 17, 0)), Color3.fromRGB(30, 130, 70))
-	local band = detail(Vector3.new(20, 2.2, 0.2), CFrame.new(forecourt + Vector3.new(0, 17, -22.3)), Color3.fromRGB(30, 130, 70))
+	detail(Vector3.new(76.4, 2.6, 44.4), forecourt * CFrame.new(0, 17, 0), Color3.fromRGB(30, 130, 70))
+	local band = detail(Vector3.new(20, 2.2, 0.2), forecourt * CFrame.new(0, 17, -22.3), Color3.fromRGB(30, 130, 70))
 	TownKit.text(band, Enum.NormalId.Front, "PETROL", C.White)
 	for _, x in { -30, 30 } do
-		local island = forecourt + Vector3.new(x, 0, 0)
-		box(Vector3.new(4, 0.6, 26), CFrame.new(island + Vector3.new(0, 0.3, 0)), C.Kerb, Enum.Material.Concrete)
+		local island = forecourt * CFrame.new(x, 0, 0)
+		box(Vector3.new(4, 0.6, 26), island * CFrame.new(0, 0.3, 0), C.Kerb, Enum.Material.Concrete)
 		for _, z in { -7, 7 } do
-			box(Vector3.new(2.4, 5.5, 3), CFrame.new(island + Vector3.new(0, 3.35, z)), Color3.fromRGB(200, 30, 35))
-			detail(Vector3.new(2.5, 1.2, 1.6), CFrame.new(island + Vector3.new(0, 4.6, z)), C.StreetBlack, Enum.Material.Glass)
+			box(Vector3.new(2.4, 5.5, 3), island * CFrame.new(0, 3.35, z), Color3.fromRGB(200, 30, 35))
+			detail(Vector3.new(2.5, 1.2, 1.6), island * CFrame.new(0, 4.6, z), C.StreetBlack, Enum.Material.Glass)
 		end
 	end
 
-	-- The mini market behind the forecourt
-	local shop = CFrame.new(centreX, PAVEMENT_TOP, minZ + 150)
-	box(Vector3.new(80, 0.6, 34), shop * CFrame.new(0, -0.3, 0), C.Pavement, Enum.Material.Pavement)
+	-- The mini market at the back
+	local shop = frame * CFrame.new(0, ROAD_TOP, depth - 22)
 	box(Vector3.new(60, 15, 26), shop * CFrame.new(0, 7.5, 4), Color3.fromRGB(70, 72, 76), Enum.Material.Concrete)
 	window(Vector3.new(44, 8, 0.3), shop * CFrame.new(-6, 4.6, -9))
 	local fascia = detail(Vector3.new(60.4, 3, 0.8), shop * CFrame.new(0, 13.2, -9.2), Color3.fromRGB(30, 130, 70))
 	TownKit.text(fascia, Enum.NormalId.Front, "MINI MART", C.White)
 
 	-- Price board by the road
-	local totem = Vector3.new(maxX - 14, PAVEMENT_TOP, minZ + 16)
-	box(Vector3.new(6, 14, 1.4), CFrame.new(totem + Vector3.new(0, 7, 0)), Color3.fromRGB(30, 130, 70))
-	local prices = detail(Vector3.new(5, 6, 0.1), CFrame.new(totem + Vector3.new(0, 8, -0.75)), C.StreetBlack)
+	local totem = frame * CFrame.new(width / 2 - 12, PAVEMENT_TOP, 6)
+	box(Vector3.new(6, 14, 1.4), totem * CFrame.new(0, 7, 0), Color3.fromRGB(30, 130, 70))
+	local prices = detail(Vector3.new(5, 6, 0.1), totem * CFrame.new(0, 8, -0.75), C.StreetBlack)
 	TownKit.text(prices, Enum.NormalId.Front, "UNLEADED 139.9\nDIESEL 146.9", Color3.fromRGB(255, 200, 40))
 
-	-- Parking spaces along the front, facing the road
-	local first = minX + 22
-	local spacing = 14
-	local count = math.floor((maxX - minX - 44) / spacing)
-	bays(Vector3.new(first - spacing / 2, 0, minZ + 26), Vector3.new(spacing, 0, 0), count, 18, Vector3.new(0, 0, 1))
-	for i = 0, count - 1 do
-		local spawn = detail(Vector3.new(6, 1, 14), TownKit.facing(Vector3.new(first + i * spacing, ROAD_TOP, minZ + 26), Vector3.new(0, 0, -1)), C.White)
-		spawn.Name = "Spawn"
-		spawn.Transparency = 1
-		spawn.Parent = depot
-	end
-	-- Out in the daylight between the parking spaces and the canopy, so the car isn't in shadow
-	depot:SetAttribute("ShowroomSpot", TownKit.facing(Vector3.new(centreX, ROAD_TOP, minZ + 46), Vector3.new(1, 0, -0.35)))
+	-- In the daylight between the parking spaces and the canopy, angled for a good look
+	local spot = frame * CFrame.new(0, ROAD_TOP, 58)
+	depot:SetAttribute("ShowroomSpot", TownKit.facing(spot.Position, frame:VectorToWorldSpace(Vector3.new(1, 0, -0.35))))
 end
 
--- The Bus team's depot: a big garage shed with a yard of bus bays
-function TownBuildings.busGarage(minX: number, maxX: number, minZ: number, maxZ: number, depot: Model)
-	local centreZ = (minZ + maxZ) / 2
-	local shed = Vector3.new(minX + 80, ROAD_TOP, centreZ)
+-- The Bus team's depot: a yard of bus bays in front of a big open garage
+function TownBuildings.busGarage(frame: CFrame, width: number, depth: number, depot: Model)
+	yard(frame, width, depth)
+	local spacing = 24
+	local count = math.floor((width - 40) / spacing)
+	local firstX = -count * spacing / 2
+	bays(frame, firstX, spacing, count, 52, 40)
+	for i = 0, count - 1 do
+		spawnSpot(frame, firstX + (i + 0.5) * spacing, 40, Vector3.new(11, 1, 48), depot)
+	end
+
+	local shedDepth = math.min(150, depth - 110)
+	local shed = frame * CFrame.new(0, ROAD_TOP, depth - shedDepth / 2 - 6)
+	local shedWidth = width - 30
 	local columns = {}
-	for _, x in { -55, 0, 55 } do
-		for z = -110, 110, 55 do
+	for x = -shedWidth / 2 + 4, shedWidth / 2 - 4, shedWidth / 4 do
+		for _, z in { -shedDepth / 2 + 4, 0, shedDepth / 2 - 4 } do
 			table.insert(columns, Vector3.new(x, 0, z))
 		end
 	end
-	canopy(shed, 120, 240, 26, Color3.fromRGB(120, 125, 130), columns)
-	box(Vector3.new(2, 26, 240), CFrame.new(shed + Vector3.new(-60, 13, 0)), C.RedBrick, Enum.Material.Brick)
-	local sign = detail(Vector3.new(0.4, 5, 60), CFrame.new(shed + Vector3.new(60.3, 23, 0)), Color3.fromRGB(210, 30, 35))
-	TownKit.text(sign, Enum.NormalId.Right, "BUS GARAGE", C.White)
+	canopy(shed, shedWidth, shedDepth, 26, Color3.fromRGB(120, 125, 130), columns)
+	box(Vector3.new(shedWidth, 26, 2), shed * CFrame.new(0, 13, shedDepth / 2), C.RedBrick, Enum.Material.Brick)
+	local sign = detail(Vector3.new(70, 5, 0.4), shed * CFrame.new(0, 23, -shedDepth / 2 - 0.3), Color3.fromRGB(210, 30, 35))
+	TownKit.text(sign, Enum.NormalId.Front, "BUS GARAGE", C.White)
 
-	local spawnX = maxX - 50
-	local spacing = 22
-	local count = math.floor((maxZ - minZ - 40) / spacing)
-	local first = minZ + 20 + spacing / 2
-	bays(Vector3.new(spawnX, 0, first - spacing / 2), Vector3.new(0, 0, spacing), count, 40, Vector3.new(1, 0, 0))
-	for i = 0, count - 1 do
-		local spawn = detail(Vector3.new(9, 1, 34), TownKit.facing(Vector3.new(spawnX, ROAD_TOP, first + i * spacing), Vector3.new(1, 0, 0)), C.White)
-		spawn.Name = "Spawn"
-		spawn.Transparency = 1
-		spawn.Parent = depot
-	end
-	depot:SetAttribute("ShowroomSpot", TownKit.facing(Vector3.new(minX + 178, ROAD_TOP, centreZ - 30), Vector3.new(0.2, 0, -1)))
+	local spot = frame * CFrame.new(width / 2 - 70, ROAD_TOP, 105)
+	depot:SetAttribute("ShowroomSpot", TownKit.facing(spot.Position, frame:VectorToWorldSpace(Vector3.new(-0.25, 0, -1))))
 end
 
--- The Emergency team's depot: a brick police station with a blue lamp, and a yard behind the gates
-function TownBuildings.policeStation(minX: number, maxX: number, minZ: number, maxZ: number, depot: Model)
-	local centreX = (minX + maxX) / 2
-	-- The station faces the yard (south); its back is on the north road
-	local station = CFrame.new(centreX, PAVEMENT_TOP, minZ + 70)
-	box(Vector3.new(200, 0.6, 70), CFrame.new(centreX, PAVEMENT_TOP - 0.3, minZ + 35), C.Pavement, Enum.Material.Pavement)
-	TownBuildings.plainRow(station * CFrame.Angles(0, math.pi, 0), 180, 50, 3, C.RedBrick)
-	local sign = detail(Vector3.new(40, 4, 0.6), station * CFrame.new(0, 9.4, 0.5), Color3.fromRGB(15, 40, 120))
-	TownKit.text(sign, Enum.NormalId.Back, "POLICE", C.White)
+-- The Emergency team's depot: a yard in front of a brick police station with a blue lamp
+function TownBuildings.policeStation(frame: CFrame, width: number, depth: number, depot: Model)
+	yard(frame, width, depth)
+	local spacing = 14
+	local count = math.floor((width - 60) / spacing)
+	local firstX = -count * spacing / 2
+	bays(frame, firstX, spacing, count, 24, 30)
+	for i = 0, count - 1 do
+		spawnSpot(frame, firstX + (i + 0.5) * spacing, 30, Vector3.new(7, 1, 19), depot)
+	end
+
+	-- The station across the back, facing the yard
+	local station = frame * CFrame.new(0, PAVEMENT_TOP, depth - 50)
+	box(Vector3.new(width - 20, 0.6, 50), station * CFrame.new(0, -0.3, 25), C.Pavement, Enum.Material.Pavement)
+	TownBuildings.plainRow(station, width - 40, 46, 3, C.RedBrick)
+	local sign = detail(Vector3.new(40, 4, 0.6), station * CFrame.new(0, 9.4, -0.5), Color3.fromRGB(15, 40, 120))
+	TownKit.text(sign, Enum.NormalId.Front, "POLICE", C.White)
 	-- The traditional blue lamp over the door
-	local lamp = detail(Vector3.new(2, 2.6, 2), station * CFrame.new(0, 14, 2), Color3.fromRGB(40, 90, 230), Enum.Material.Neon)
+	local lamp = detail(Vector3.new(2, 2.6, 2), station * CFrame.new(0, 14, -2), Color3.fromRGB(40, 90, 230), Enum.Material.Neon)
 	local glow = Instance.new("PointLight")
 	glow.Color = Color3.fromRGB(60, 110, 255)
 	glow.Range = 14
 	glow.Parent = lamp
 
-	local spawnZ = maxZ - 40
+	local spot = frame * CFrame.new(width / 2 - 60, ROAD_TOP, 95)
+	depot:SetAttribute("ShowroomSpot", TownKit.facing(spot.Position, frame:VectorToWorldSpace(Vector3.new(-1, 0, -0.4))))
+end
+
+-- Motorway services: a car park, a fuel canopy and a long low building with a café
+function TownBuildings.services(frame: CFrame, width: number, depth: number)
+	yard(frame, width, depth)
 	local spacing = 14
-	local first = minX + 30
-	local count = math.floor((maxX - minX - 60) / spacing)
-	bays(Vector3.new(first - spacing / 2, 0, spawnZ), Vector3.new(spacing, 0, 0), count, 20, Vector3.new(0, 0, 1))
-	for i = 0, count - 1 do
-		local spawn = detail(Vector3.new(7, 1, 19), TownKit.facing(Vector3.new(first + i * spacing, ROAD_TOP, spawnZ), Vector3.new(0, 0, 1)), C.White)
-		spawn.Name = "Spawn"
-		spawn.Transparency = 1
-		spawn.Parent = depot
+	for row = 0, 2 do
+		local z = 40 + row * 46
+		local count = math.floor((width * 0.55) / spacing)
+		bays(frame, -width / 2 + 20, spacing, count, 20, z)
 	end
-	depot:SetAttribute("ShowroomSpot", TownKit.facing(Vector3.new(centreX + 30, ROAD_TOP, minZ + 150), Vector3.new(1, 0, 0.4)))
+	local building = frame * CFrame.new(width * 0.2, PAVEMENT_TOP, depth - 60)
+	box(Vector3.new(width * 0.45, 0.6, 60), building * CFrame.new(0, -0.3, 22), C.Pavement, Enum.Material.Pavement)
+	box(Vector3.new(width * 0.4, 18, 40), building * CFrame.new(0, 9, 26), Color3.fromRGB(210, 205, 195), Enum.Material.Concrete)
+	window(Vector3.new(width * 0.4 - 6, 10, 0.3), building * CFrame.new(0, 6, 5.9))
+	local fascia = detail(Vector3.new(50, 4, 0.6), building * CFrame.new(0, 15, 5.6), Color3.fromRGB(240, 120, 20))
+	TownKit.text(fascia, Enum.NormalId.Front, "SERVICES  ·  FOOD  ·  FUEL", C.White)
+	local fuel = frame * CFrame.new(-width / 2 + 70, ROAD_TOP, depth - 60)
+	local columns = {}
+	for _, x in { -24, 24 } do
+		for _, z in { -14, 14 } do
+			table.insert(columns, Vector3.new(x, 0, z))
+		end
+	end
+	canopy(fuel, 64, 40, 16, Color3.fromRGB(235, 235, 235), columns)
+	detail(Vector3.new(64.4, 2.4, 40.4), fuel * CFrame.new(0, 16, 0), Color3.fromRGB(240, 120, 20))
+end
+
+-- A power station like Battersea's: a huge brick hall with a white chimney at each corner
+function TownBuildings.powerStation(centre: Vector3, sizeX: number, sizeZ: number)
+	local base = Vector3.new(centre.X, PAVEMENT_TOP, centre.Z)
+	local brick = Color3.fromRGB(150, 85, 60)
+	box(Vector3.new(sizeX, 70, sizeZ), CFrame.new(base + Vector3.new(0, 35, 0)), brick, Enum.Material.Brick)
+	box(Vector3.new(sizeX * 0.6, 20, sizeZ * 0.8), CFrame.new(base + Vector3.new(0, 80, 0)), brick, Enum.Material.Brick)
+	for _, x in { -1, 1 } do
+		for _, z in { -1, 1 } do
+			local foot = base + Vector3.new(x * (sizeX / 2 - 10), 0, z * (sizeZ / 2 - 10))
+			box(Vector3.new(18, 75, 18), CFrame.new(foot + Vector3.new(0, 37.5, 0)), brick, Enum.Material.Brick)
+			TownKit.post(12, 80, foot + Vector3.new(0, 75, 0), Color3.fromRGB(238, 236, 230), Enum.Material.Concrete)
+			TownKit.post(13, 3, foot + Vector3.new(0, 152, 0), Color3.fromRGB(200, 198, 190), Enum.Material.Concrete)
+		end
+	end
+	for floor = 0, 4 do
+		window(Vector3.new(sizeX + 0.3, 6, sizeZ * 0.6), CFrame.new(base + Vector3.new(0, 12 + floor * 11, 0)))
+	end
+end
+
+-- A tall column with a statue on top and four lions round the base, for the middle of a big roundabout
+function TownBuildings.column(base: Vector3)
+	box(Vector3.new(26, 2, 26), CFrame.new(base + Vector3.new(0, 1, 0)), C.Stone, Enum.Material.Limestone)
+	box(Vector3.new(20, 2, 20), CFrame.new(base + Vector3.new(0, 3, 0)), C.Stone, Enum.Material.Limestone)
+	box(Vector3.new(12, 15, 12), CFrame.new(base + Vector3.new(0, 11.5, 0)), C.Portland, Enum.Material.Limestone)
+	TownKit.post(5.5, 105, base + Vector3.new(0, 19, 0), C.Portland, Enum.Material.Limestone)
+	box(Vector3.new(8, 4, 8), CFrame.new(base + Vector3.new(0, 126, 0)), C.Bronze, Enum.Material.Metal)
+	box(Vector3.new(2.4, 8, 2.4), CFrame.new(base + Vector3.new(0, 132, 0)), C.Bronze, Enum.Material.Metal)
+	box(Vector3.new(3.2, 1, 3.2), CFrame.new(base + Vector3.new(0, 136.5, 0)), C.Bronze, Enum.Material.Metal)
+	for _, offset in { Vector3.new(1, 0, 0), Vector3.new(-1, 0, 0), Vector3.new(0, 0, 1), Vector3.new(0, 0, -1) } do
+		local lion = TownKit.facing(base + offset * 10 + Vector3.new(0, 4, 0), offset)
+		box(Vector3.new(3.6, 3.6, 8), lion * CFrame.new(0, 1.8, 0), C.Bronze, Enum.Material.Metal)
+		box(Vector3.new(4, 4, 3.4), lion * CFrame.new(0, 4.2, -3), C.Bronze, Enum.Material.Metal)
+	end
 end
 
 -- The big observation wheel on the south bank. The spinning part is tagged so MapLife turns it on every player's device.

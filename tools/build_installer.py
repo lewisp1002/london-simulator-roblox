@@ -63,6 +63,39 @@ end
 """
 
 
+# Streaming settings live on Workspace in the place file, so the installer sets them. Opportunistic means
+# players' devices drop the streets they've left behind (by default they keep everything they've ever seen,
+# so the game got slower the longer you drove).
+STREAMING = """
+workspace.StreamingEnabled = true
+pcall(function()
+	workspace.StreamingTargetRadius = 900
+end)
+pcall(function()
+	(workspace :: any).StreamOutBehavior = (Enum :: any).StreamOutBehavior.Opportunistic
+end)
+"""
+
+
+# An earlier try put photo textures from the UK Map PBR pack on every road, pavement and wall through
+# MaterialService. Those images don't load as material textures (roads went almost black), so this removes
+# them. Roblox's own 2022 materials (grainy asphalt, herringbone pavement) look right with the colours in TownKit.
+MATERIALS = """
+do
+	local MaterialService = game:GetService("MaterialService")
+	for _, info in { { "LdnTarmac", Enum.Material.Asphalt }, { "LdnSlabs", Enum.Material.Pavement }, { "LdnConcrete", Enum.Material.Concrete }, { "LdnSlate", Enum.Material.Slate }, { "LdnRender", Enum.Material.Plaster } } do
+		local variant = MaterialService:FindFirstChild(info[1])
+		if variant then
+			variant:Destroy()
+		end
+		if MaterialService:GetBaseMaterialOverride(info[2]) == info[1] then
+			MaterialService:SetBaseMaterialOverride(info[2], "")
+		end
+	end
+end
+"""
+
+
 def long_string(text: str) -> str:
     level = 0
     while f"]{'=' * level}]" in text:
@@ -125,6 +158,8 @@ def main() -> None:
     for service_name, node in project["tree"].items():
         if not service_name.startswith("$"):
             count += emit_node(lines, service_name, node, None, counter)
+    lines.append(STREAMING)
+    lines.append(MATERIALS)
     lines.append(f'\nprint("London Simulator installed {count} scripts. Press Play to test!")\n')
     (ROOT / "INSTALL.luau").write_text("\n".join(lines), encoding="utf-8")
     print(f"Wrote INSTALL.luau with {count} scripts")
