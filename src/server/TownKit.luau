@@ -6,19 +6,25 @@ local ServerStorage = game:GetService("ServerStorage")
 
 local TownKit = {}
 
--- Heights, in studs. Roads sit just above the ground and pavements are one kerb higher.
+-- Heights, in studs. Roads sit just above the ground and pavements are one kerb higher. The kerb is the AHDEV
+-- UK road pack's (a quarter of a stud: low, like real kerbs), so our roads match the pack Lewis bought.
 TownKit.ROAD_TOP = 0.1
-TownKit.KERB_HEIGHT = 0.5
+TownKit.KERB_HEIGHT = 0.25
+TownKit.KERB_WIDTH = 0.75 -- the darker kerb stones between the road and the pavement
+-- Roads, kerbs, pavements and their paint are all matte Concrete, like the pack: Roblox's Asphalt material
+-- looks rough and plasticky up close
+TownKit.ROAD_MATERIAL = Enum.Material.Concrete
 TownKit.PAVEMENT_TOP = TownKit.ROAD_TOP + TownKit.KERB_HEIGHT
 TownKit.FLOOR = 11 -- one storey of a building
 
 TownKit.Colours = {
-	Asphalt = Color3.fromRGB(150, 150, 153), -- light grainy grey, like Birmingham Vehicle Simulator's roads
-	White = Color3.fromRGB(235, 235, 232),
-	Yellow = Color3.fromRGB(240, 190, 20),
-	Pavement = Color3.fromRGB(206, 196, 186), -- the Pavement material draws herringbone block paving, like BVS
+	-- The AHDEV road pack's colours: dark grey road, mid grey kerb stones, light grey pavement, bright paint
+	Asphalt = Color3.fromRGB(84, 83, 80),
+	White = Color3.fromRGB(248, 248, 248),
+	Yellow = Color3.fromRGB(255, 255, 0),
+	Pavement = Color3.fromRGB(163, 162, 165),
 	RedPaving = Color3.fromRGB(176, 112, 100), -- block paving on the high streets
-	Kerb = Color3.fromRGB(152, 150, 144),
+	Kerb = Color3.fromRGB(99, 95, 98),
 	Grass = Color3.fromRGB(78, 128, 58),
 	Hedge = Color3.fromRGB(45, 90, 40),
 	PostOfficeRed = Color3.fromRGB(200, 16, 30),
@@ -95,7 +101,7 @@ end
 -- Flat road paint at road level, turned `angle` radians around the vertical
 function TownKit.paint(sizeX: number, sizeZ: number, position: Vector3, colour: Color3?, angle: number?): Part
 	local cframe = CFrame.new(position.X, TownKit.ROAD_TOP + 0.02, position.Z) * CFrame.Angles(0, angle or 0, 0)
-	local part = TownKit.detail(Vector3.new(sizeX, 0.05, sizeZ), cframe, colour or TownKit.Colours.White)
+	local part = TownKit.detail(Vector3.new(sizeX, 0.05, sizeZ), cframe, colour or TownKit.Colours.White, Enum.Material.Concrete)
 	part.CastShadow = false
 	return part
 end

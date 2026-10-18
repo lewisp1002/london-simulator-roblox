@@ -106,8 +106,9 @@ local ROAD_COLOURS = {
 	yard = Color3.fromRGB(70, 74, 82),
 	water = Color3.fromRGB(45, 85, 130),
 	park = Color3.fromRGB(40, 85, 50),
+	rail = Color3.fromRGB(128, 104, 92),
 }
-local ROAD_ORDER = { water = 1, park = 1, yard = 2, side = 3, main = 4, dual = 5, motorway = 6 }
+local ROAD_ORDER = { water = 1, park = 1, rail = 2, yard = 2, side = 3, main = 4, dual = 5, motorway = 6 }
 local ROADS = { side = true, main = true, dual = true, motorway = true }
 
 -- One thing on the map. Entries are:

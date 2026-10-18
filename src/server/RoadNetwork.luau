@@ -19,10 +19,14 @@ local C = TownKit.Colours
 local ROAD_TOP = TownKit.ROAD_TOP
 local KERB = TownKit.KERB_HEIGHT
 
-local ROAD = { colour = C.Asphalt, material = Enum.Material.Asphalt, thickness = 2 }
-local MOTORWAY_ROAD = { colour = Color3.fromRGB(90, 91, 94), material = Enum.Material.Asphalt, thickness = 2 }
-local PAVEMENT = { colour = C.Pavement, material = Enum.Material.Pavement, thickness = KERB + 2 }
-local RED_PAVEMENT = { colour = C.RedPaving, material = Enum.Material.Pavement, thickness = KERB + 2 }
+-- The look of the AHDEV UK road pack Lewis bought: matte Concrete everywhere, a dark grey road, darker kerb
+-- stones and light grey pavements, with thin bright paint
+local ROAD = { colour = C.Asphalt, material = TownKit.ROAD_MATERIAL, thickness = 2 }
+local MOTORWAY_ROAD = ROAD
+local PAVEMENT = { colour = C.Pavement, material = Enum.Material.Concrete, thickness = KERB + 2 }
+local KERB_STONES = { colour = C.Kerb, material = Enum.Material.Concrete, thickness = KERB + 2 }
+local KERB_WIDTH = TownKit.KERB_WIDTH
+local LINE = 0.25 -- paint lines are a quarter of a stud wide, like the pack's
 local ISLAND = { colour = C.Grass, material = Enum.Material.Grass, thickness = KERB + 2 }
 local CONCRETE = { colour = C.Concrete, material = Enum.Material.Concrete, thickness = KERB + 2 }
 local PARAPET_COLOUR = Color3.fromRGB(178, 176, 170)
@@ -301,7 +305,9 @@ local function buildCornerPavements(node: Node, corners: { Corner })
 		local y = node.pos.Y
 		local ta, tb = corner.ta :: Vector3, corner.tb :: Vector3
 		local points = shortArc(corner.centre :: Vector3, Vector3.new(ta.X, y, ta.Z), Vector3.new(tb.X, y, tb.Z), y)
-		RoadKit.strip(points, RoadKit.normalsFor(points), -width, 0, PAVEMENT, KERB)
+		local normals = RoadKit.normalsFor(points)
+		RoadKit.strip(points, normals, -KERB_WIDTH, 0, KERB_STONES, KERB)
+		RoadKit.strip(points, normals, -width - KERB_WIDTH, -KERB_WIDTH, PAVEMENT, KERB)
 	end
 end
 
@@ -339,16 +345,22 @@ local function buildRoundabout(node: Node, ends: { RoundaboutEnd })
 		limit = math.max(limit, info.e.road.limit)
 	end
 	-- The circle of tarmac, a touch lower than the roads so the two never flicker
-	local disc = cylinder(node.radius, 2, node.pos - Vector3.new(0, 0.05, 0), C.Asphalt, Enum.Material.Asphalt)
-	disc:SetAttribute("SpeedLimit", limit)
-	-- The island: a kerb ring, filled with real grass (Terrain), which looks better than a grassy part
-	cylinder(node.island + 0.6, KERB + 1.5, node.pos + Vector3.new(0, KERB - 0.1, 0), C.Kerb, Enum.Material.Concrete)
-	-- A low grassy mound that rises a little above the kerb. Terrain needs at least 4 studs of height to
-	-- fill anything, so most of this sits hidden below the road.
-	Workspace.Terrain:FillCylinder(CFrame.new(node.pos + Vector3.new(0, KERB - 2.1, 0)), 6, node.island - 0.4, Enum.Material.Grass)
-	-- On stilts if it's above the ground (motorway junctions)
 	if y > 1 + ROAD_TOP then
-		cylinder(node.radius - 1, y - 2, node.pos - Vector3.new(0, 2, 0), PILLAR_COLOUR, Enum.Material.Concrete)
+		-- Raised up over the motorway (most M11 junctions): an open ring of road on pillars (see
+		-- buildRoundaboutPillars), with a parapet round the inside, and the motorway running underneath it
+		local mid = (node.radius + node.island) / 2
+		local centre = Vector3.new(node.pos.X, y, node.pos.Z)
+		local ring = RoadKit.arc(centre, mid, 0, 2 * math.pi, math.rad(4))
+		setLimit(RoadKit.strip(ring, RoadKit.normalsFor(ring), -(mid - node.island), node.radius - mid, ROAD), limit)
+		RoadKit.parapet(RoadKit.arc(centre, node.island - 0.6, 0, 2 * math.pi, math.rad(4)), 3, 2, 1.2, PARAPET_COLOUR, Enum.Material.Concrete)
+	else
+		local disc = cylinder(node.radius, 2, node.pos - Vector3.new(0, 0.05, 0), C.Asphalt, TownKit.ROAD_MATERIAL)
+		disc:SetAttribute("SpeedLimit", limit)
+		-- The island: a kerb ring, filled with real grass (Terrain), which looks better than a grassy part
+		cylinder(node.island + 0.6, KERB + 1.5, node.pos + Vector3.new(0, KERB - 0.1, 0), C.Kerb, Enum.Material.Concrete)
+		-- A low grassy mound that rises a little above the kerb. Terrain needs at least 4 studs of height to
+		-- fill anything, so most of this sits hidden below the road.
+		Workspace.Terrain:FillCylinder(CFrame.new(node.pos + Vector3.new(0, KERB - 2.1, 0)), 6, node.island - 0.4, Enum.Material.Grass)
 	end
 
 	-- Where each road opens out into the circle
@@ -405,7 +417,8 @@ local function buildRoundabout(node: Node, ends: { RoundaboutEnd })
 		if raised then
 			RoadKit.parapet(RoadKit.offset(points, normals, -0.6), 3, 2, 1.2, PARAPET_COLOUR, Enum.Material.Concrete)
 		elseif width > 0 then
-			RoadKit.strip(points, normals, -math.min(width, 17), 0, PAVEMENT, KERB)
+			RoadKit.strip(points, normals, -KERB_WIDTH, 0, KERB_STONES, KERB)
+			RoadKit.strip(points, normals, -math.min(width, 17) - KERB_WIDTH, -KERB_WIDTH, PAVEMENT, KERB)
 		end
 	end
 
@@ -413,11 +426,11 @@ local function buildRoundabout(node: Node, ends: { RoundaboutEnd })
 	local ring = node.radius - node.island
 	if ring >= 24 then
 		local middle = node.island + ring / 2
-		local count = math.floor(2 * math.pi * middle / 14)
+		local count = math.floor(2 * math.pi * middle / 9)
 		for k = 0, count - 1 do
 			local angle = k / count * 2 * math.pi
 			local at = node.pos + Vector3.new(math.cos(angle) * middle, 0, math.sin(angle) * middle)
-			RoadKit.mark(at, Vector3.new(-math.sin(angle), 0, math.cos(angle)), 0.45, 6, C.White)
+			RoadKit.mark(Vector3.new(at.X, y, at.Z), Vector3.new(-math.sin(angle), 0, math.cos(angle)), LINE, 4, C.White)
 		end
 	end
 	node.reach = node.radius + 4
@@ -603,46 +616,54 @@ end
 local function centreLines(road: Road, s0: number, s1: number)
 	local p = road.profile
 	local path = road.path
+	local kind = road.kind
 	if p.oneway then
-		local inside = road.hw - p.edge - 0.6
-		RoadKit.pathLine(path, s0, s1, inside, 0.45, C.White)
-		RoadKit.pathLine(path, s0, s1, -inside, 0.45, C.White)
+		local inside = road.hw - p.edge - 0.5
+		RoadKit.pathLine(path, s0, s1, inside, 0.3, C.White)
+		RoadKit.pathLine(path, s0, s1, -inside, 0.3, C.White)
 		return
 	end
 	if p.res == 0 then
-		local dash, gap = 6, 6
-		if road.kind == "street" or road.kind == "lane" or road.kind == "back" then
-			dash, gap = 3, 9
-		elseif road.kind == "high" then
-			dash, gap = 4, 7
+		-- Country lanes have no lines at all; everything else has the pack's centre line (5.5-stud dashes with
+		-- 2.75-stud gaps), with long warning dashes just before junctions
+		if kind ~= "lane" then
+			local hazardStart = if road.a.kind == "attach" or road.a.kind == "end" or road.a.kind == "join" then s0 else s0 + HAZARD_LENGTH
+			local hazardEnd = if road.b.kind == "attach" or road.b.kind == "end" or road.b.kind == "join" then s1 else s1 - HAZARD_LENGTH
+			if hazardEnd - hazardStart > 30 then
+				RoadKit.dashes(path, s0, hazardStart, 0, LINE, 6, 1.5, C.White)
+				RoadKit.dashes(path, hazardStart, hazardEnd, 0, LINE, 5.5, 2.75, C.White)
+				RoadKit.dashes(path, hazardEnd, s1, 0, LINE, 6, 1.5, C.White)
+			else
+				RoadKit.dashes(path, s0, s1, 0, LINE, 6, 1.5, C.White)
+			end
 		end
-		-- Long warning dashes just before junctions
-		local hazardStart = if road.a.kind == "attach" or road.a.kind == "end" or road.a.kind == "join" then s0 else s0 + HAZARD_LENGTH
-		local hazardEnd = if road.b.kind == "attach" or road.b.kind == "end" or road.b.kind == "join" then s1 else s1 - HAZARD_LENGTH
-		if hazardEnd - hazardStart > 30 then
-			RoadKit.dashes(path, s0, hazardStart, 0, 0.5, 6, 2, C.White)
-			RoadKit.dashes(path, hazardStart, hazardEnd, 0, 0.5, dash, gap, C.White)
-			RoadKit.dashes(path, hazardEnd, s1, 0, 0.5, 6, 2, C.White)
-		else
-			RoadKit.dashes(path, s0, s1, 0, 0.5, 6, 2, C.White)
+		-- Two lanes each way: short lane dashes between them, like the pack's 2-lane road
+		for k = 1, p.lanes - 1 do
+			for _, side in { 1, -1 } do
+				RoadKit.dashes(path, s0, s1, side * p.lane * k, LINE, 2.5, 5.75, C.White)
+			end
 		end
 		if p.edge > 0 then
 			for _, side in { 1, -1 } do
 				for _, piece in sidePieces(road, side, s0, s1) do
-					RoadKit.pathLine(path, piece[1], piece[2], side * (road.hw - p.edge - 0.4), 0.4, C.White)
+					RoadKit.pathLine(path, piece[1], piece[2], side * (road.hw - p.edge - 0.3), 0.3, C.White)
 				end
 			end
 		end
-		-- Double yellow lines (no parking) along the kerbs near each junction. The parking strips themselves
-		-- aren't marked, like in BVS, which keeps the streets clean (and saves thousands of parts).
+		-- Double yellow lines along the kerbs (no parking): near the junctions on streets where people park,
+		-- and all the way along town streets with nowhere to park, like the pack's DY road
 		local parking = p.parking or 0
+		local ranges: { { number } } = {}
 		if parking > 0 then
 			local near = math.min(55, (s1 - s0) / 2)
-			for _, range in { { s0, s0 + near }, { s1 - near, s1 } } do
-				for _, side in { 1, -1 } do
-					for _, inset in { 0.9, 1.6 } do
-						RoadKit.pathLine(path, range[1], range[2], side * (road.hw - inset), 0.32, C.Yellow)
-					end
+			ranges = { { s0, s0 + near }, { s1 - near, s1 } }
+		elseif road.side == "pavement" then
+			ranges = { { s0, s1 } }
+		end
+		for _, range in ranges do
+			for _, side in { 1, -1 } do
+				for _, inset in { 0.375, 0.875 } do
+					RoadKit.pathLine(path, range[1], range[2], side * (road.hw - inset), LINE, C.Yellow)
 				end
 			end
 		end
@@ -651,13 +672,13 @@ local function centreLines(road: Road, s0: number, s1: number)
 	-- Dual carriageways and the motorway: each side has its own lanes
 	for _, side in { 1, -1 } do
 		local inner = p.res / 2
-		RoadKit.pathLine(path, s0, s1, side * (inner + 0.6), 0.45, C.White)
+		RoadKit.pathLine(path, s0, s1, side * (inner + 0.5), 0.3, C.White)
 		for k = 1, p.lanes - 1 do
-			RoadKit.dashes(path, s0, s1, side * (inner + p.lane * k), 0.45, 9, 14, C.White)
+			RoadKit.dashes(path, s0, s1, side * (inner + p.lane * k), 0.3, 7, 18, C.White)
 		end
 		local laneEdge = inner + p.lanes * p.lane
-		local width = if p.shoulder > 0 then 0.8 else 0.45
-		local offset = if p.shoulder > 0 then laneEdge else road.hw - p.edge - 0.5
+		local width = if p.shoulder > 0 then 0.6 else 0.4
+		local offset = if p.shoulder > 0 then laneEdge else road.hw - p.edge - 0.4
 		-- Solid along the edge, broken where slip roads join or a layby opens
 		local covered = s0
 		for _, piece in sidePieces(road, side, s0, s1) do
@@ -800,6 +821,25 @@ local function buildRaised(road: Road, ground: (number, number) -> number, isRoa
 	end
 end
 
+-- Pillars round the ring of a raised roundabout, standing clear of the roads underneath
+local function buildRoundaboutPillars(node: Node, ground: (number, number) -> number, isRoad: (number, number) -> boolean)
+	local y = node.pos.Y
+	if y <= 1 + ROAD_TOP then
+		return
+	end
+	local mid = (node.radius + node.island) / 2
+	local count = math.max(8, math.floor(2 * math.pi * mid / 40))
+	for k = 0, count - 1 do
+		local angle = k / count * 2 * math.pi
+		local at = node.pos + Vector3.new(math.cos(angle) * mid, 0, math.sin(angle) * mid)
+		local groundY = ground(at.X, at.Z)
+		local height = y - 2 - groundY
+		if height > 4 and not isRoad(at.X, at.Z) then
+			TownKit.box(Vector3.new(7, height, 5), CFrame.new(at.X, groundY + height / 2, at.Z) * CFrame.Angles(0, -angle, 0), PILLAR_COLOUR, Enum.Material.Concrete)
+		end
+	end
+end
+
 local function buildRoad(road: Road)
 	local path = road.path
 	local p = road.profile
@@ -815,7 +855,7 @@ local function buildRoad(road: Road)
 	if p.res > 0 and not p.oneway and s1 - s0 > 16 then
 		local nose = 8
 		local resPoints, resNormals = RoadKit.slice(path, s0 + nose, s1 - nose)
-		if road.kind == "motorway" or road.kind == "westway" then
+		if road.kind == "motorway" or road.kind == "westway" or (p :: any).barrier then
 			RoadKit.strip(resPoints, resNormals, -p.res / 2, p.res / 2, CONCRETE, 0.25)
 			RoadKit.parapet(resPoints, 2.6, 0, 1.2, PARAPET_COLOUR, Enum.Material.Concrete)
 		else
@@ -840,11 +880,14 @@ local function buildRoad(road: Road)
 			local from, to = road.sideFrom[side], road.sideTo[side]
 			for _, piece in sidePieces(road, side, from, to) do
 				local sidePoints, sideNormals = RoadKit.slice(path, piece[1], piece[2])
-				local walkStyle = if road.kind == "high" then RED_PAVEMENT else PAVEMENT
+				local walkStyle = PAVEMENT
+				local outer = road.hw + KERB_WIDTH + road.sideWidth
 				if side > 0 then
-					RoadKit.strip(sidePoints, sideNormals, road.hw, road.hw + road.sideWidth, walkStyle, KERB)
+					RoadKit.strip(sidePoints, sideNormals, road.hw, road.hw + KERB_WIDTH, KERB_STONES, KERB)
+					RoadKit.strip(sidePoints, sideNormals, road.hw + KERB_WIDTH, outer, walkStyle, KERB)
 				else
-					RoadKit.strip(sidePoints, sideNormals, -road.hw - road.sideWidth, -road.hw, walkStyle, KERB)
+					RoadKit.strip(sidePoints, sideNormals, -road.hw - KERB_WIDTH, -road.hw, KERB_STONES, KERB)
+					RoadKit.strip(sidePoints, sideNormals, -outer, -road.hw - KERB_WIDTH, walkStyle, KERB)
 				end
 			end
 		end
@@ -869,9 +912,9 @@ end
 local function minimapKind(kind: string): string
 	if kind == "motorway" then
 		return "motorway"
-	elseif kind == "dual" or kind == "arterial" or kind == "westway" or kind == "slip" then
+	elseif kind == "dual" or kind == "arterial" or kind == "westway" or kind == "slip" or kind == "link" then
 		return "dual"
-	elseif kind == "street" or kind == "lane" or kind == "back" then
+	elseif kind == "street" or kind == "lane" or kind == "back" or kind == "city" or kind == "terrace" then
 		return "side"
 	end
 	return "main"
@@ -1002,7 +1045,7 @@ function RoadNetwork.build(layout: any, ground: (number, number) -> number, isRo
 		elseif node.kind == "end" then
 			local e = node.ends[1]
 			if e then
-				local disc = cylinder(e.hw + 7, 2, node.pos - Vector3.new(0, 0.05, 0), C.Asphalt, Enum.Material.Asphalt)
+				local disc = cylinder(e.hw + 7, 2, node.pos - Vector3.new(0, 0.05, 0), C.Asphalt, TownKit.ROAD_MATERIAL)
 				disc:SetAttribute("SpeedLimit", e.road.limit)
 				node.reach = e.hw + 7
 			end
@@ -1068,9 +1111,14 @@ function RoadNetwork.build(layout: any, ground: (number, number) -> number, isRo
 		end
 	end
 
-	-- Bridges, flyovers and ramps
+	-- Bridges, flyovers and ramps, and the pillars under raised roundabouts
 	for _, road in roads do
 		buildRaised(road, ground, isRoad)
+	end
+	for _, node in nodes do
+		if node.kind == "roundabout" then
+			buildRoundaboutPillars(node, ground, isRoad)
+		end
 	end
 
 	-- The minimap: each road as straight lines, joining up the little pieces of each curve

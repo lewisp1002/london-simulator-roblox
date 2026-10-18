@@ -67,9 +67,13 @@ Config.UnlockEverythingInStudio = true
 -- Changing this name starts everyone from scratch (e.g. to wipe test data before launch)
 Config.DataStoreName = "PlayerData_v1"
 
--- Builds London (roads, river, parks, buildings) when the game starts. See LondonMap and tools/london_layout.py.
--- Turn it off if the map is saved in the place file instead.
+-- Builds the map (roads, river, parks, buildings) when the game starts. Turn it off if the map is saved in the
+-- place file instead.
 Config.BuildMap = true
+
+-- Which map: "Cambridge" (the city and countryside, see CambridgeMap and tools/cambridge_layout.py) or "London"
+-- (the first map, see LondonMap and tools/london_layout.py)
+Config.Map = "Cambridge"
 
 -- 1 stud is about 0.28 metres, so 1 stud per second is about 0.626 mph
 Config.MphPerStudPerSecond = 0.626
@@ -409,6 +413,4188 @@ return Vehicles
 removeOldScripts(folder2)
 local folder3 = game:GetService("ServerScriptService")
 local folder4 = folder(folder3, "Server")
+put(folder4, "ModuleScript", "CambridgeLayout", [[
+--!nocheck
+-- The Cambridge map's roads, river, railway, areas and villages, as data. MADE BY tools/cambridge_layout.py:
+-- change that and run it again, don't edit this file by hand.
+
+return {
+	bounds = { -6600, -5200, 6600, 5100 },
+	outline = {
+		{ -6010.7, -4559.2 },
+		{ -6064.4, -4536.4 },
+		{ -6134.3, -4484 },
+		{ -6186.1, -4413.8 },
+		{ -6215.4, -4331.5 },
+		{ -6498, -1520.4 },
+		{ -6399, 1199.9 },
+		{ -6021.7, 3091.4 },
+		{ -5990.7, 3176.5 },
+		{ -5956.5, 3226.4 },
+		{ -5912.9, 3268.4 },
+		{ -4620, 4282.8 },
+		{ -4550.5, 4316.5 },
+		{ -2853.5, 4882.2 },
+		{ -2799.3, 4894.8 },
+		{ -2743.7, 4897.2 },
+		{ -789.8, 4800.9 },
+		{ 1500, 4998.2 },
+		{ 3740.5, 4707.8 },
+		{ 3798.1, 4694.4 },
+		{ 3852, 4669.9 },
+		{ 5622.2, 3645 },
+		{ 5669.5, 3611.2 },
+		{ 5725.9, 3545 },
+		{ 6364.6, 2270.8 },
+		{ 6386.4, 2213 },
+		{ 6395.9, 2151.9 },
+		{ 6300.2, 300 },
+		{ 6498.6, -1800 },
+		{ 6313.9, -3645.9 },
+		{ 6296.1, -3703.3 },
+		{ 6267.2, -3756.1 },
+		{ 6228.4, -3802 },
+		{ 6181.2, -3839.2 },
+		{ 6127.6, -3866.3 },
+		{ 4999.8, -4299.2 },
+		{ 3217.4, -4696.1 },
+		{ -768.5, -5096.8 },
+		{ -831.5, -5096.5 },
+		{ -2600, -4900.2 },
+		{ -4546.6, -4997.3 },
+		{ -4599.4, -4995.3 },
+		{ -4651, -4984 },
+	},
+	profiles = {
+		city = { lanes = 1, lane = 11.5, parking = 0, res = 0, shoulder = 0, edge = 0, side = "pavement", sideWidth = 9, limit = 20, rank = 1 },
+		town = { lanes = 1, lane = 12.5, parking = 0, res = 0, shoulder = 0, edge = 0, side = "pavement", sideWidth = 7, limit = 30, rank = 1 },
+		terrace = { lanes = 1, lane = 12.5, parking = 7, res = 0, shoulder = 0, edge = 0, side = "pavement", sideWidth = 7, limit = 20, rank = 0 },
+		high = { lanes = 1, lane = 12.5, parking = 7, res = 0, shoulder = 0, edge = 0, side = "pavement", sideWidth = 12, limit = 20, rank = 2 },
+		main = { lanes = 2, lane = 12.5, parking = 0, res = 0, shoulder = 0, edge = 0, side = "pavement", sideWidth = 8, limit = 30, rank = 3 },
+		aroad = { lanes = 1, lane = 13, parking = 0, res = 0, shoulder = 0, edge = 1.5, side = "verge", sideWidth = 10, limit = 50, rank = 2 },
+		lane = { lanes = 1, lane = 10.5, parking = 0, res = 0, shoulder = 0, edge = 0, side = "verge", sideWidth = 6, limit = 60, rank = 0 },
+		dual = {
+			lanes = 3,
+			lane = 12.5,
+			parking = 0,
+			res = 8,
+			shoulder = 0,
+			edge = 2,
+			side = "verge",
+			sideWidth = 14,
+			limit = 70,
+			rank = 4,
+			barrier = true,
+		},
+		motorway = { lanes = 3, lane = 12.5, parking = 0, res = 9, shoulder = 10, edge = 0, side = "verge", sideWidth = 14, limit = 70, rank = 5 },
+		slip = { lanes = 1, lane = 13, parking = 0, res = 0, shoulder = 0, edge = 2, side = "verge", sideWidth = 8, limit = 70, rank = 3, oneway = true },
+		link = { lanes = 1, lane = 13, parking = 0, res = 0, shoulder = 0, edge = 1.5, side = "verge", sideWidth = 6, limit = 40, rank = 3 },
+	},
+	nodes = {
+		{ id = "RG_SW", x = -1250, z = 760, kind = "lights", name = "Fen Causeway" },
+		{ id = "RG_W", x = -1250, z = -650, kind = "lights", name = "Northampton Street" },
+		{ id = "RG_NW", x = -960, z = -1160, kind = "lights", name = "Castle Hill" },
+		{ id = "RG_N", x = -150, z = -1560, kind = "roundabout", radius = 52, island = 26, name = "Mitcham's Corner" },
+		{ id = "RG_NE", x = 1260, z = -1830, kind = "roundabout", radius = 50, island = 25, name = "Elizabeth Way" },
+		{ id = "RG_E", x = 1150, z = -950, kind = "roundabout", radius = 62, island = 32, name = "Newmarket Road" },
+		{ id = "RG_SE", x = 1060, z = 720, kind = "lights", name = "Mill Road" },
+		{ id = "RG_S", x = 250, z = 880, kind = "lights", name = "Hills Road" },
+		{ id = "RG_S2", x = -650, z = 930, kind = "lights", name = "Trumpington Street" },
+		{ id = "C1", x = -480, z = -650, kind = "junction", name = "Round Church" },
+		{ id = "C2", x = -120, z = -650, kind = "junction", name = "Sidney Street" },
+		{ id = "C3", x = 250, z = -650, kind = "junction", name = "Jesus Lane" },
+		{ id = "C4", x = -480, z = 60, kind = "junction", name = "King's Parade" },
+		{ id = "C5", x = -120, z = 60, kind = "mini", name = "Market Square" },
+		{ id = "C6", x = 250, z = 60, kind = "junction", name = "Parkside" },
+		{ id = "C7", x = -480, z = 450, kind = "junction", name = "Silver Street" },
+		{ id = "C8", x = -120, z = 450, kind = "junction", name = "Downing Street" },
+		{ id = "C9", x = 250, z = 450, kind = "junction", name = "Regent Street" },
+		{ id = "E_PK", x = 1080.4, z = 60.2, kind = "junction", name = "Parkside" },
+		{ id = "Q_SS", x = -1257.1, z = 430, kind = "junction" },
+		{ id = "HU1", x = -1900, z = -2150, kind = "junction", name = "Huntingdon Road" },
+		{ id = "GIRTON", x = -2700, z = -2850, kind = "mini", name = "Girton" },
+		{ id = "HR1", x = -830, z = -2300, kind = "lights", name = "King's Hedges Road" },
+		{ id = "MI1", x = 420, z = -2350, kind = "lights", name = "Science Park" },
+		{ id = "COWLEY", x = 1700, z = -2560, kind = "end", name = "Cowley Road" },
+		{ id = "NR1", x = 1850, z = -930, kind = "lights", name = "Retail Park" },
+		{ id = "NR2", x = 2400, z = -870, kind = "lights", name = "Coldham's Lane" },
+		{ id = "NR3", x = 3350, z = -960, kind = "roundabout", radius = 56, island = 28, name = "Airport Way" },
+		{ id = "NR4", x = 4500, z = -820, kind = "junction", name = "Teversham turn" },
+		{ id = "NR_E", x = 6200, z = -700, kind = "end", name = "to Newmarket" },
+		{ id = "MR1", x = 2100, z = 1000, kind = "lights", name = "Romsey" },
+		{ id = "MR2", x = 2850, z = 1180, kind = "mini", name = "Brooks Road" },
+		{ id = "CH", x = 3700, z = 1500, kind = "mini", name = "Cherry Hinton" },
+		{ id = "FUL", x = 5050, z = 1650, kind = "mini", name = "Fulbourn" },
+		{ id = "FUL_E", x = 6150, z = 1900, kind = "end", name = "to Balsham" },
+		{ id = "H1", x = 470, z = 1480, kind = "lights", name = "Station Road" },
+		{ id = "H2", x = 820, z = 2150, kind = "lights", name = "Cherry Hinton Road" },
+		{ id = "AD", x = 1150, z = 2860, kind = "roundabout", radius = 56, island = 28, name = "Addenbrooke's" },
+		{ id = "STATION", x = 1330, z = 1640, kind = "end", name = "Station" },
+		{ id = "BAB_E", x = 3300, z = 4300, kind = "end", name = "to Babraham" },
+		{ id = "HOSP", x = 950, z = 3350, kind = "end", name = "Hospital" },
+		{ id = "TR1", x = -560, z = 1850, kind = "junction", name = "Brooklands Avenue" },
+		{ id = "TR2", x = -470, z = 2620, kind = "lights", name = "Long Road" },
+		{ id = "TP", x = -450, z = 3120, kind = "mini", name = "Trumpington" },
+		{ id = "H_LONG", x = 1015.4, z = 2536.9, kind = "lights" },
+		{ id = "BR1", x = -1780, z = 790, kind = "junction", name = "Grantchester Road" },
+		{ id = "BR2", x = -2600, z = 820, kind = "junction", name = "Barton Road" },
+		{ id = "GRANT", x = -2080, z = 2660, kind = "mini", name = "Grantchester" },
+		{ id = "MD1", x = -2350, z = -760, kind = "junction", name = "West Cambridge" },
+		{ id = "A14_W", x = -6300, z = -3650, kind = "end", name = "A14 west" },
+		{ id = "A14_E", x = 6350, z = -3550, kind = "end", name = "A14 east" },
+		{ id = "GI", x = -3449.9, z = -3462.3, y = 16, kind = "roundabout", radius = 150, island = 114, name = "Girton Interchange" },
+		{ id = "GI_off1", x = -3866.5, z = -3543, kind = "attach" },
+		{ id = "GI_on1", x = -3027.6, z = -3504.2, kind = "attach" },
+		{ id = "GI_off-1", x = -3032.4, z = -3400.3, kind = "attach" },
+		{ id = "GI_on-1", x = -3871.3, z = -3439.1, kind = "attach" },
+		{ id = "GI_arm0", x = -3429.1, z = -3911.8, kind = "join" },
+		{ id = "GI_arm1", x = -3189.5, z = -3095.3, kind = "join" },
+		{ id = "HJ", x = -750, z = -3410, y = 16, kind = "roundabout", radius = 120, island = 86, name = "Histon" },
+		{ id = "HJ_off1", x = -1169, z = -3469.8, kind = "attach" },
+		{ id = "HJ_on1", x = -329.1, z = -3455.2, kind = "attach" },
+		{ id = "HJ_off-1", x = -331, z = -3351.2, kind = "attach" },
+		{ id = "HJ_on-1", x = -1170.9, z = -3365.8, kind = "attach" },
+		{ id = "HJ_arm0", x = -742.2, z = -3829.9, kind = "join" },
+		{ id = "HJ_arm1", x = -757.8, z = -2990.1, kind = "join" },
+		{ id = "MJ", x = 1100, z = -3380, y = 16, kind = "roundabout", radius = 120, island = 86, name = "Milton" },
+		{ id = "MJ_off1", x = 680.9, z = -3438.8, kind = "attach" },
+		{ id = "MJ_on1", x = 1520.7, z = -3423, kind = "attach" },
+		{ id = "MJ_off-1", x = 1519.1, z = -3319, kind = "attach" },
+		{ id = "MJ_on-1", x = 679.2, z = -3334.8, kind = "attach" },
+		{ id = "MJ_arm0", x = 1106.8, z = -3799.9, kind = "join" },
+		{ id = "MJ_arm1", x = 1093.2, z = -2960.1, kind = "join" },
+		{ id = "AJ", x = 3420, z = -3304.9, y = 16, kind = "roundabout", radius = 120, island = 86, name = "Fen Ditton" },
+		{ id = "AJ_off1", x = 3000, z = -3367.5, kind = "attach" },
+		{ id = "AJ_on1", x = 3839.5, z = -3370.2, kind = "attach" },
+		{ id = "AJ_off-1", x = 3839.9, z = -3266.2, kind = "attach" },
+		{ id = "AJ_on-1", x = 3000.4, z = -3263.5, kind = "attach" },
+		{ id = "AJ_arm0", x = 3418.6, z = -3724.9, kind = "join" },
+		{ id = "AJ_arm1", x = 3421.3, z = -2884.9, kind = "join" },
+		{ id = "M11_S", x = 650, z = 5050, kind = "end", name = "M11 south" },
+		{ id = "J13", x = -3547.7, z = -850, y = 16, kind = "roundabout", radius = 120, island = 86, name = "Junction 13" },
+		{ id = "J13_off1", x = -3482.3, z = -1270.8, kind = "attach" },
+		{ id = "J13_on1", x = -3471.5, z = -431.1, kind = "attach" },
+		{ id = "J13_off-1", x = -3592.5, z = -429.6, kind = "attach" },
+		{ id = "J13_on-1", x = -3603.3, z = -1269.2, kind = "attach" },
+		{ id = "J13_arm0", x = -3127.7, z = -855.4, kind = "join" },
+		{ id = "J13_arm1", x = -3967.6, z = -844.6, kind = "join" },
+		{ id = "J12", x = -3473.7, z = 779.3, y = 16, kind = "roundabout", radius = 120, island = 86, name = "Junction 12" },
+		{ id = "J12_off1", x = -3437.7, z = 355.4, kind = "attach" },
+		{ id = "J12_on1", x = -3343.5, z = 1188.7, kind = "attach" },
+		{ id = "J12_off-1", x = -3464.2, z = 1198.1, kind = "attach" },
+		{ id = "J12_on-1", x = -3558.4, z = 364.8, kind = "attach" },
+		{ id = "J12_arm0", x = -3055, z = 746.7, kind = "join" },
+		{ id = "J12_arm1", x = -3892.5, z = 811.9, kind = "join" },
+		{ id = "J11", x = -751.5, z = 4063.8, y = 16, kind = "roundabout", radius = 120, island = 86, name = "Junction 11" },
+		{ id = "J11_off1", x = -1124.5, z = 3865.5, kind = "attach" },
+		{ id = "J11_on1", x = -343.3, z = 4172.9, kind = "attach" },
+		{ id = "J11_off-1", x = -387.6, z = 4285.5, kind = "attach" },
+		{ id = "J11_on-1", x = -1168.8, z = 3978.1, kind = "attach" },
+		{ id = "J11_arm0", x = -597.7, z = 3673, kind = "join" },
+		{ id = "J11_arm1", x = -905.3, z = 4454.6, kind = "join" },
+		{ id = "HISTON", x = -700, z = -4300, kind = "mini", name = "Histon" },
+		{ id = "MILTON", x = 1350, z = -4250, kind = "mini", name = "Milton" },
+		{ id = "FD", x = 3250, z = -2050, kind = "mini", name = "Fen Ditton" },
+		{ id = "HORN", x = 3700, z = -4250, kind = "mini", name = "Horningsea" },
+		{ id = "OAK", x = -3700, z = -4700, kind = "end", name = "to Oakington" },
+		{ id = "DITTON_W", x = 2350, z = -2200, kind = "junction", name = "Ditton Lane" },
+		{ id = "MADINGLEY", x = -5000, z = -1350, kind = "mini", name = "Madingley" },
+		{ id = "MAD_W", x = -6350, z = -1500, kind = "end", name = "to St Neots" },
+		{ id = "COTON", x = -4400, z = -150, kind = "mini", name = "Coton" },
+		{ id = "BARTON", x = -4800, z = 960, kind = "mini", name = "Barton" },
+		{ id = "BARTON_W", x = -6400, z = 1050, kind = "end", name = "to Comberton" },
+		{ id = "HAUX", x = -1200, z = 4700, kind = "end", name = "to Hauxton" },
+		{ id = "J_millrd2_2350_1060", x = 2350, z = 1060, kind = "junction" },
+		{ id = "J_cherryhintonrd_2350_1859", x = 2350, z = 1859.2, kind = "junction" },
+		{ id = "J_millrd2_2600_1120", x = 2600, z = 1120, kind = "junction" },
+		{ id = "J_cherryhintonrd_2600_1623", x = 2600, z = 1622.9, kind = "junction" },
+		{ id = "J_coldhams_2562_-421", x = 2562.1, z = -420.8, kind = "junction" },
+		{ id = "J_coldhams_2712_-4", x = 2712.3, z = -4.4, kind = "junction" },
+		{ id = "J_chesterton2_256_-1681", x = 255.6, z = -1681.1, kind = "junction" },
+		{ id = "J_chesterton2_899_-1796", x = 899.4, z = -1795.9, kind = "junction" },
+		{ id = "J_miltonrd_-14_-1791", x = -14, z = -1790.6, kind = "junction" },
+		{ id = "J_miltonrd_229_-2125", x = 229, z = -2125.3, kind = "junction" },
+		{ id = "J_kingshedges_-647_-2335", x = -647.1, z = -2334.8, kind = "junction" },
+		{ id = "J_kingshedges_96_-2387", x = 96.2, z = -2386.6, kind = "junction" },
+		{ id = "J_histonrd_-917_-1452", x = -916.7, z = -1452.5, kind = "junction" },
+		{ id = "J_histonrd_-855_-2000", x = -855, z = -1999.6, kind = "junction" },
+		{ id = "J_huntingdon_-1273_-1530", x = -1273.3, z = -1530.3, kind = "junction" },
+		{ id = "J_huntingdon_-1643_-1908", x = -1642.5, z = -1908, kind = "junction" },
+		{ id = "J_bartonrd2_-1980_797", x = -1979.9, z = 797.3, kind = "junction" },
+		{ id = "J_bartonrd2_-2380_812", x = -2379.9, z = 811.9, kind = "junction" },
+		{ id = "J_grantchesterrd_-1821_1100", x = -1820.9, z = 1099.9, kind = "junction" },
+		{ id = "J_grantchesterrd_-1880_1550", x = -1880.2, z = 1550, kind = "junction" },
+		{ id = "J_trumpingtonrd2_-537_2045", x = -537.2, z = 2045, kind = "junction" },
+		{ id = "J_trumpingtonrd2_-490_2445", x = -490.4, z = 2445.4, kind = "junction" },
+		{ id = "J_longrd_-199_2599", x = -198.5, z = 2598.8, kind = "junction" },
+		{ id = "J_longrd_499_2554", x = 499.5, z = 2553.6, kind = "junction" },
+		{ id = "J_cherryhintonrd_1745_2100", x = 1744.8, z = 2100.2, kind = "junction" },
+		{ id = "J_cherryhintonrd_2126_1949", x = 2125.6, z = 1948.6, kind = "junction" },
+		{ id = "J_hillsrd2_559_1650", x = 559.1, z = 1650.5, kind = "junction" },
+		{ id = "J_hillsrd2_729_1975", x = 728.8, z = 1975.4, kind = "junction" },
+		{ id = "J_brooklands_-380_1818", x = -380.4, z = 1817.9, kind = "junction" },
+		{ id = "J_brooklands_148_1665", x = 148.3, z = 1664.8, kind = "junction" },
+		{ id = "J_fulbournrd_3950_1508", x = 3950.4, z = 1508.3, kind = "junction" },
+		{ id = "J_fulbournrd_4501_1555", x = 4500.9, z = 1554.8, kind = "junction" },
+		{ id = "J_cherryhintonhigh_3101_1247", x = 3100.8, z = 1246.9, kind = "junction" },
+		{ id = "J_cherryhintonhigh_3548_1424", x = 3548, z = 1424, kind = "junction" },
+		{ id = "J_trumpingtonrd3_-464_2760", x = -464.4, z = 2760, kind = "junction" },
+		{ id = "J_trumpingtonrd3_-455_2990", x = -455.2, z = 2990, kind = "junction" },
+		{ id = "J_hauxton_-464_3250", x = -463.5, z = 3249.6, kind = "junction" },
+		{ id = "J_hauxton_-492_3521", x = -491.8, z = 3520.9, kind = "junction" },
+		{ id = "J_histonrd3_-720_-3961", x = -719.8, z = -3961.2, kind = "junction" },
+		{ id = "J_histonrd3_-707_-4180", x = -707, z = -4180.4, kind = "junction" },
+		{ id = "J_miltonrd3_1219_-3922", x = 1218.8, z = -3921.9, kind = "junction" },
+		{ id = "J_miltonrd3_1312_-4138", x = 1312.5, z = -4137.5, kind = "junction" },
+		{ id = "J_huntingdon2_-2141_-2361", x = -2140.7, z = -2360.6, kind = "junction" },
+		{ id = "J_huntingdon2_-2488_-2664", x = -2487.6, z = -2664.2, kind = "junction" },
+		{ id = "J_grantchester_tp_-1940_2730", x = -1940, z = 2730, kind = "junction" },
+		{ id = "J_grantchester_tp_-1644_2878", x = -1644, z = 2878, kind = "junction" },
+		{ id = "J_madingleyrd3_-4458_-1157", x = -4458.4, z = -1156.6, kind = "junction" },
+		{ id = "J_madingleyrd3_-4851_-1297", x = -4851.1, z = -1296.8, kind = "junction" },
+		{ id = "J_bartonrd4_-4252_878", x = -4251.8, z = 877.8, kind = "junction" },
+		{ id = "J_bartonrd4_-4650_938", x = -4650.4, z = 937.6, kind = "junction" },
+		{ id = "J_fulbourn_e_5201_1664", x = 5201.5, z = 1663.8, kind = "junction" },
+		{ id = "J_fulbourn_e_5551_1696", x = 5550.6, z = 1695.6, kind = "junction" },
+		{ id = "J_chesterton_-758_-1339", x = -757.5, z = -1338.6, kind = "junction" },
+		{ id = "J_chesterton_-506_-1484", x = -506.5, z = -1484.2, kind = "junction" },
+		{ id = "J_chesterton2_2_399_-1724", x = 399.4, z = -1724, kind = "junction" },
+		{ id = "J_chesterton2_2_729_-1780", x = 729.1, z = -1779.8, kind = "junction" },
+		{ id = "J_cowley_566_-2383", x = 566.4, z = -2382.8, kind = "junction" },
+		{ id = "J_cowley_860_-2449", x = 859.9, z = -2448.6, kind = "junction" },
+		{ id = "J_millrd_1588_872", x = 1588.5, z = 872.1, kind = "junction" },
+		{ id = "J_millrd_1935_959", x = 1935.1, z = 958.8, kind = "junction" },
+		{ id = "J_coldhams_2_2_2787_498", x = 2786.8, z = 497.9, kind = "junction" },
+		{ id = "J_coldhams_2_2_2812_769", x = 2812, z = 769.1, kind = "junction" },
+		{ id = "J_hillsrd_293_1024", x = 292.6, z = 1023.8, kind = "junction" },
+		{ id = "J_hillsrd_403_1322", x = 402.9, z = 1321.8, kind = "junction" },
+		{ id = "J_stationrd_696_1522", x = 696.1, z = 1522.1, kind = "junction" },
+		{ id = "J_stationrd_1013_1581", x = 1012.9, z = 1581, kind = "junction" },
+		{ id = "J_cherryhintonrd_970_2145", x = 969.9, z = 2144.9, kind = "junction" },
+		{ id = "J_cherryhintonrd_1305_2133", x = 1305.2, z = 2133.5, kind = "junction" },
+		{ id = "J_trumpingtonrd_-645_1120", x = -645.5, z = 1119.9, kind = "junction" },
+		{ id = "J_trumpingtonrd_-630_1413", x = -629.9, z = 1412.8, kind = "junction" },
+		{ id = "J_longrd_2_-49_2587", x = -49, z = 2587.2, kind = "junction" },
+		{ id = "J_longrd_2_226_2566", x = 226, z = 2565.8, kind = "junction" },
+		{ id = "J_romsey_back_2136_854", x = 2136.4, z = 854.5, kind = "junction" },
+		{ id = "J_romsey_back_2211_558", x = 2210.6, z = 557.7, kind = "junction" },
+		{ id = "J_rung1_2350_1210", x = 2350, z = 1210, kind = "junction" },
+		{ id = "J_rung1_2350_1516", x = 2350, z = 1516.2, kind = "junction" },
+		{ id = "J_cres6_-588_-2197", x = -587.8, z = -2197.1, kind = "junction" },
+		{ id = "J_cres6_-363_-2154", x = -362.7, z = -2154.1, kind = "junction" },
+		{ id = "J_cres12_-58_2399", x = -57.7, z = 2399.3, kind = "junction" },
+		{ id = "J_cres12_253_2379", x = 253, z = 2379.2, kind = "junction" },
+		{ id = "J_cres8_-1243_-1742", x = -1243, z = -1742.4, kind = "junction" },
+		{ id = "J_cres8_-1415_-1918", x = -1414.5, z = -1917.9, kind = "junction" },
+	},
+	roads = {
+		{ id = "queens", profile = "main", a = "RG_SW", b = "Q_SS", radius = 120, name = "Queen's Road" },
+		{ id = "queens_2", profile = "main", a = "Q_SS", b = "RG_W", radius = 120, name = "Queen's Road", via = {
+				{ -1265, 60 },
+			} },
+		{
+			id = "northampton",
+			profile = "main",
+			a = "RG_W",
+			b = "RG_NW",
+			radius = 150,
+			name = "Northampton Street",
+			via = {
+				{ -1180, -960 },
+			},
+		},
+		{ id = "chesterton", profile = "main", a = "RG_NW", b = "J_chesterton_-758_-1339", radius = 300, name = "Chesterton Road" },
+		{
+			id = "chesterton_2",
+			profile = "main",
+			a = "J_chesterton_-758_-1339",
+			b = "J_chesterton_-506_-1484",
+			radius = 300,
+			name = "Chesterton Road",
+			via = {
+				{ -620, -1460 },
+			},
+		},
+		{ id = "chesterton_2_2", profile = "main", a = "J_chesterton_-506_-1484", b = "RG_N", radius = 300, name = "Chesterton Road" },
+		{ id = "chesterton2", profile = "main", a = "RG_N", b = "J_chesterton2_256_-1681", radius = 400, name = "Chesterton Road" },
+		{
+			id = "chesterton2_2",
+			profile = "main",
+			a = "J_chesterton2_256_-1681",
+			b = "J_chesterton2_2_399_-1724",
+			radius = 400,
+			name = "Chesterton Road",
+		},
+		{
+			id = "chesterton2_2_3",
+			profile = "main",
+			a = "J_chesterton2_2_399_-1724",
+			b = "J_chesterton2_2_729_-1780",
+			radius = 400,
+			name = "Chesterton Road",
+			via = {
+				{ 520, -1760 },
+			},
+		},
+		{
+			id = "chesterton2_2_3_2",
+			profile = "main",
+			a = "J_chesterton2_2_729_-1780",
+			b = "J_chesterton2_899_-1796",
+			radius = 400,
+			name = "Chesterton Road",
+		},
+		{ id = "chesterton2_2_2", profile = "main", a = "J_chesterton2_899_-1796", b = "RG_NE", radius = 400, name = "Chesterton Road" },
+		{ id = "elizabeth", profile = "main", a = "RG_NE", b = "RG_E", radius = 300, name = "Elizabeth Way", via = {
+				{ 1270, -1380 },
+			} },
+		{ id = "eastrd", profile = "main", a = "RG_E", b = "E_PK", radius = 400, name = "East Road", via = {
+				{ 1090, -250 },
+			} },
+		{ id = "eastrd_2", profile = "main", a = "E_PK", b = "RG_SE", radius = 400, name = "East Road" },
+		{ id = "gonville", profile = "main", a = "RG_SE", b = "RG_S", radius = 300, name = "Gonville Place", via = {
+				{ 700, 840 },
+			} },
+		{ id = "lensfield", profile = "main", a = "RG_S", b = "RG_S2", radius = 300, name = "Lensfield Road", via = {
+				{ -200, 960 },
+			} },
+		{ id = "fencauseway", profile = "main", a = "RG_S2", b = "RG_SW", radius = 250, name = "Fen Causeway", via = {
+				{ -960, 960 },
+			} },
+		{ id = "trinity", profile = "city", a = "C1", b = "C4", radius = 120, name = "Trinity Street", via = {
+				{ -500, -300 },
+			} },
+		{ id = "kingsparade", profile = "city", a = "C4", b = "C7", radius = 120, name = "King's Parade", via = {
+				{ -470, 250 },
+			} },
+		{
+			id = "trumpingtonst",
+			profile = "city",
+			a = "C7",
+			b = "RG_S2",
+			radius = 120,
+			name = "Trumpington Street",
+			via = {
+				{ -560, 700 },
+			},
+		},
+		{ id = "sidney", profile = "city", a = "C2", b = "C5", radius = 120, name = "Sidney Street" },
+		{ id = "standrews", profile = "city", a = "C5", b = "C8", radius = 120, name = "St Andrew's Street" },
+		{ id = "parker", profile = "city", a = "C3", b = "C6", radius = 120, name = "Parker Street" },
+		{ id = "regent", profile = "town", a = "C6", b = "C9", radius = 120, name = "Regent Street" },
+		{ id = "regent2", profile = "town", a = "C9", b = "RG_S", radius = 120, name = "Regent Street", via = {
+				{ 250, 700 },
+			} },
+		{ id = "jesuslane", profile = "city", a = "C1", b = "C2", radius = 120, name = "Bridge Street" },
+		{ id = "jesuslane2", profile = "city", a = "C2", b = "C3", radius = 120, name = "Jesus Lane" },
+		{ id = "maids", profile = "town", a = "C3", b = "RG_E", radius = 200, name = "Maids Causeway", via = {
+				{ 700, -820 },
+			} },
+		{ id = "market", profile = "city", a = "C4", b = "C5", radius = 120, name = "Market Street" },
+		{ id = "pettycury", profile = "city", a = "C5", b = "C6", radius = 120, name = "Petty Cury" },
+		{ id = "downing", profile = "city", a = "C7", b = "C8", radius = 120, name = "Pembroke Street" },
+		{ id = "downing2", profile = "city", a = "C8", b = "C9", radius = 120, name = "Downing Street" },
+		{ id = "bridgest", profile = "town", a = "C1", b = "RG_NW", radius = 150, name = "Bridge Street", via = {
+				{ -700, -900 },
+			} },
+		{ id = "parkside", profile = "town", a = "C6", b = "E_PK", radius = 120, name = "Parkside", via = {
+				{ 650, 60 },
+			} },
+		{ id = "silver", profile = "city", a = "C7", b = "Q_SS", radius = 120, name = "Silver Street", via = {
+				{ -800, 435 },
+			} },
+		{ id = "huntingdon", profile = "aroad", a = "RG_NW", b = "J_huntingdon_-1273_-1530", radius = 500, name = "Huntingdon Road" },
+		{
+			id = "huntingdon_2",
+			profile = "aroad",
+			a = "J_huntingdon_-1273_-1530",
+			b = "J_huntingdon_-1643_-1908",
+			radius = 500,
+			name = "Huntingdon Road",
+			via = {
+				{ -1400, -1680 },
+			},
+		},
+		{ id = "huntingdon_2_2", profile = "aroad", a = "J_huntingdon_-1643_-1908", b = "HU1", radius = 500, name = "Huntingdon Road" },
+		{ id = "huntingdon2", profile = "aroad", a = "HU1", b = "J_huntingdon2_-2141_-2361", radius = 500, name = "Huntingdon Road" },
+		{
+			id = "huntingdon2_2",
+			profile = "aroad",
+			a = "J_huntingdon2_-2141_-2361",
+			b = "J_huntingdon2_-2488_-2664",
+			radius = 500,
+			name = "Huntingdon Road",
+		},
+		{ id = "huntingdon2_2_2", profile = "aroad", a = "J_huntingdon2_-2488_-2664", b = "GIRTON", radius = 500, name = "Huntingdon Road" },
+		{ id = "histonrd", profile = "aroad", a = "RG_NW", b = "J_histonrd_-917_-1452", radius = 500, name = "Histon Road" },
+		{
+			id = "histonrd_2",
+			profile = "aroad",
+			a = "J_histonrd_-917_-1452",
+			b = "J_histonrd_-855_-2000",
+			radius = 500,
+			name = "Histon Road",
+			via = {
+				{ -880, -1700 },
+			},
+		},
+		{ id = "histonrd_2_2", profile = "aroad", a = "J_histonrd_-855_-2000", b = "HR1", radius = 500, name = "Histon Road" },
+		{ id = "miltonrd", profile = "main", a = "RG_N", b = "J_miltonrd_-14_-1791", radius = 500, name = "Milton Road" },
+		{
+			id = "miltonrd_2",
+			profile = "main",
+			a = "J_miltonrd_-14_-1791",
+			b = "J_miltonrd_229_-2125",
+			radius = 500,
+			name = "Milton Road",
+			via = {
+				{ 80, -1950 },
+			},
+		},
+		{ id = "miltonrd_2_2", profile = "main", a = "J_miltonrd_229_-2125", b = "MI1", radius = 500, name = "Milton Road" },
+		{ id = "kingshedges", profile = "town", a = "HR1", b = "J_kingshedges_-647_-2335", radius = 600, name = "King's Hedges Road" },
+		{
+			id = "kingshedges_2",
+			profile = "town",
+			a = "J_kingshedges_-647_-2335",
+			b = "J_kingshedges_96_-2387",
+			radius = 600,
+			name = "King's Hedges Road",
+			via = {
+				{ -200, -2420 },
+			},
+		},
+		{ id = "kingshedges_2_2", profile = "town", a = "J_kingshedges_96_-2387", b = "MI1", radius = 600, name = "King's Hedges Road" },
+		{ id = "cowley", profile = "town", a = "MI1", b = "J_cowley_566_-2383", radius = 400, name = "Cowley Road" },
+		{ id = "cowley_2", profile = "town", a = "J_cowley_566_-2383", b = "J_cowley_860_-2449", radius = 400, name = "Cowley Road" },
+		{
+			id = "cowley_2_2",
+			profile = "town",
+			a = "J_cowley_860_-2449",
+			b = "COWLEY",
+			radius = 400,
+			name = "Cowley Road",
+			via = {
+				{ 1000, -2480 },
+			},
+		},
+		{ id = "newmarket", profile = "main", a = "RG_E", b = "NR1", radius = 500, name = "Newmarket Road", via = {
+				{ 1500, -960 },
+			} },
+		{ id = "newmarket2", profile = "main", a = "NR1", b = "NR2", radius = 120, name = "Newmarket Road" },
+		{ id = "newmarket3", profile = "aroad", a = "NR2", b = "NR3", radius = 600, name = "Newmarket Road", via = {
+				{ 2900, -900 },
+			} },
+		{ id = "newmarket4", profile = "aroad", a = "NR3", b = "NR4", radius = 800, name = "Newmarket Road", via = {
+				{ 3950, -860 },
+			} },
+		{ id = "newmarket5", profile = "aroad", a = "NR4", b = "NR_E", radius = 900, name = "Newmarket Road", via = {
+				{ 5400, -760 },
+			} },
+		{
+			id = "millrd",
+			profile = "high",
+			a = "RG_SE",
+			b = "J_millrd_1588_872",
+			radius = 600,
+			name = "Mill Road",
+			via = {
+				{ 1500, 850 },
+			},
+		},
+		{ id = "millrd_2", profile = "high", a = "J_millrd_1588_872", b = "J_millrd_1935_959", radius = 600, name = "Mill Road" },
+		{ id = "millrd_2_2", profile = "high", a = "J_millrd_1935_959", b = "MR1", radius = 600, name = "Mill Road" },
+		{ id = "millrd2", profile = "high", a = "MR1", b = "J_millrd2_2350_1060", radius = 120, name = "Mill Road" },
+		{ id = "millrd2_2", profile = "high", a = "J_millrd2_2350_1060", b = "J_millrd2_2600_1120", radius = 120, name = "Mill Road" },
+		{ id = "millrd2_2_2", profile = "high", a = "J_millrd2_2600_1120", b = "MR2", radius = 120, name = "Mill Road" },
+		{
+			id = "cherryhintonhigh",
+			profile = "town",
+			a = "MR2",
+			b = "J_cherryhintonhigh_3101_1247",
+			radius = 500,
+			name = "Cherry Hinton High Street",
+		},
+		{
+			id = "cherryhintonhigh_2",
+			profile = "town",
+			a = "J_cherryhintonhigh_3101_1247",
+			b = "J_cherryhintonhigh_3548_1424",
+			radius = 500,
+			name = "Cherry Hinton High Street",
+			via = {
+				{ 3300, 1300 },
+			},
+		},
+		{
+			id = "cherryhintonhigh_2_2",
+			profile = "town",
+			a = "J_cherryhintonhigh_3548_1424",
+			b = "CH",
+			radius = 500,
+			name = "Cherry Hinton High Street",
+		},
+		{ id = "fulbournrd", profile = "aroad", a = "CH", b = "J_fulbournrd_3950_1508", radius = 700, name = "Fulbourn Road" },
+		{
+			id = "fulbournrd_2",
+			profile = "aroad",
+			a = "J_fulbournrd_3950_1508",
+			b = "J_fulbournrd_4501_1555",
+			radius = 700,
+			name = "Fulbourn Road",
+			via = {
+				{ 4300, 1520 },
+			},
+		},
+		{ id = "fulbournrd_2_2", profile = "aroad", a = "J_fulbournrd_4501_1555", b = "FUL", radius = 700, name = "Fulbourn Road" },
+		{ id = "fulbourn_e", profile = "lane", a = "FUL", b = "J_fulbourn_e_5201_1664", radius = 400, name = "Balsham Road" },
+		{ id = "fulbourn_e_2", profile = "lane", a = "J_fulbourn_e_5201_1664", b = "J_fulbourn_e_5551_1696", radius = 400, name = "Balsham Road" },
+		{
+			id = "fulbourn_e_2_2",
+			profile = "lane",
+			a = "J_fulbourn_e_5551_1696",
+			b = "FUL_E",
+			radius = 400,
+			name = "Balsham Road",
+			via = {
+				{ 5600, 1700 },
+			},
+		},
+		{ id = "coldhams", profile = "town", a = "NR2", b = "J_coldhams_2562_-421", radius = 700, name = "Coldham's Lane" },
+		{ id = "coldhams_2", profile = "town", a = "J_coldhams_2562_-421", b = "J_coldhams_2712_-4", radius = 700, name = "Coldham's Lane" },
+		{
+			id = "coldhams_2_2",
+			profile = "town",
+			a = "J_coldhams_2712_-4",
+			b = "J_coldhams_2_2_2787_498",
+			radius = 700,
+			name = "Coldham's Lane",
+			via = {
+				{ 2750, 100 },
+			},
+		},
+		{
+			id = "coldhams_2_2_2",
+			profile = "town",
+			a = "J_coldhams_2_2_2787_498",
+			b = "J_coldhams_2_2_2812_769",
+			radius = 700,
+			name = "Coldham's Lane",
+		},
+		{ id = "coldhams_2_2_2_2", profile = "town", a = "J_coldhams_2_2_2812_769", b = "MR2", radius = 700, name = "Coldham's Lane" },
+		{
+			id = "teversham",
+			profile = "lane",
+			a = "NR4",
+			b = "FUL",
+			radius = 400,
+			name = "Teversham Lane",
+			via = {
+				{ 4700, 100 },
+				{ 5000, 900 },
+			},
+		},
+		{ id = "hillsrd", profile = "main", a = "RG_S", b = "J_hillsrd_293_1024", radius = 500, name = "Hills Road" },
+		{
+			id = "hillsrd_2",
+			profile = "main",
+			a = "J_hillsrd_293_1024",
+			b = "J_hillsrd_403_1322",
+			radius = 500,
+			name = "Hills Road",
+			via = {
+				{ 330, 1150 },
+			},
+		},
+		{ id = "hillsrd_2_2", profile = "main", a = "J_hillsrd_403_1322", b = "H1", radius = 500, name = "Hills Road" },
+		{ id = "hillsrd2", profile = "main", a = "H1", b = "J_hillsrd2_559_1650", radius = 500, name = "Hills Road" },
+		{ id = "hillsrd2_2", profile = "main", a = "J_hillsrd2_559_1650", b = "J_hillsrd2_729_1975", radius = 500, name = "Hills Road" },
+		{ id = "hillsrd2_2_2", profile = "main", a = "J_hillsrd2_729_1975", b = "H2", radius = 500, name = "Hills Road" },
+		{ id = "hillsrd3", profile = "main", a = "H2", b = "H_LONG", radius = 500, name = "Hills Road", via = {
+				{ 1000, 2500 },
+			} },
+		{ id = "hillsrd3_2", profile = "main", a = "H_LONG", b = "AD", radius = 500, name = "Hills Road" },
+		{ id = "stationrd", profile = "town", a = "H1", b = "J_stationrd_696_1522", radius = 300, name = "Station Road" },
+		{
+			id = "stationrd_2",
+			profile = "town",
+			a = "J_stationrd_696_1522",
+			b = "J_stationrd_1013_1581",
+			radius = 300,
+			name = "Station Road",
+			via = {
+				{ 900, 1560 },
+			},
+		},
+		{ id = "stationrd_2_2", profile = "town", a = "J_stationrd_1013_1581", b = "STATION", radius = 300, name = "Station Road" },
+		{ id = "cherryhintonrd", profile = "town", a = "H2", b = "J_cherryhintonrd_970_2145", radius = 500, name = "Cherry Hinton Road" },
+		{
+			id = "cherryhintonrd_4",
+			profile = "town",
+			a = "J_cherryhintonrd_970_2145",
+			b = "J_cherryhintonrd_1305_2133",
+			radius = 500,
+			name = "Cherry Hinton Road",
+		},
+		{
+			id = "cherryhintonrd_4_2",
+			profile = "town",
+			a = "J_cherryhintonrd_1305_2133",
+			b = "J_cherryhintonrd_1745_2100",
+			radius = 500,
+			name = "Cherry Hinton Road",
+			via = {
+				{ 1700, 2120 },
+			},
+		},
+		{
+			id = "cherryhintonrd_3",
+			profile = "town",
+			a = "J_cherryhintonrd_1745_2100",
+			b = "J_cherryhintonrd_2126_1949",
+			radius = 500,
+			name = "Cherry Hinton Road",
+		},
+		{
+			id = "cherryhintonrd_3_2",
+			profile = "town",
+			a = "J_cherryhintonrd_2126_1949",
+			b = "J_cherryhintonrd_2350_1859",
+			radius = 500,
+			name = "Cherry Hinton Road",
+		},
+		{
+			id = "cherryhintonrd_2",
+			profile = "town",
+			a = "J_cherryhintonrd_2350_1859",
+			b = "J_cherryhintonrd_2600_1623",
+			radius = 500,
+			name = "Cherry Hinton Road",
+			via = {
+				{ 2500, 1800 },
+			},
+		},
+		{ id = "cherryhintonrd_2_2", profile = "town", a = "J_cherryhintonrd_2600_1623", b = "MR2", radius = 500, name = "Cherry Hinton Road" },
+		{
+			id = "babraham",
+			profile = "aroad",
+			a = "AD",
+			b = "BAB_E",
+			radius = 800,
+			name = "Babraham Road",
+			via = {
+				{ 1800, 2980 },
+				{ 2600, 3500 },
+			},
+		},
+		{ id = "hospital", profile = "town", a = "AD", b = "HOSP", radius = 200, name = "Hills Road", via = {
+				{ 1100, 3150 },
+			} },
+		{ id = "trumpingtonrd", profile = "main", a = "RG_S2", b = "J_trumpingtonrd_-645_1120", radius = 500, name = "Trumpington Road" },
+		{
+			id = "trumpingtonrd_2",
+			profile = "main",
+			a = "J_trumpingtonrd_-645_1120",
+			b = "J_trumpingtonrd_-630_1413",
+			radius = 500,
+			name = "Trumpington Road",
+			via = {
+				{ -640, 1350 },
+			},
+		},
+		{ id = "trumpingtonrd_2_2", profile = "main", a = "J_trumpingtonrd_-630_1413", b = "TR1", radius = 500, name = "Trumpington Road" },
+		{ id = "trumpingtonrd2", profile = "main", a = "TR1", b = "J_trumpingtonrd2_-537_2045", radius = 500, name = "Trumpington Road" },
+		{
+			id = "trumpingtonrd2_2",
+			profile = "main",
+			a = "J_trumpingtonrd2_-537_2045",
+			b = "J_trumpingtonrd2_-490_2445",
+			radius = 500,
+			name = "Trumpington Road",
+		},
+		{ id = "trumpingtonrd2_2_2", profile = "main", a = "J_trumpingtonrd2_-490_2445", b = "TR2", radius = 500, name = "Trumpington Road" },
+		{ id = "trumpingtonrd3", profile = "town", a = "TR2", b = "J_trumpingtonrd3_-464_2760", radius = 500, name = "Trumpington Road" },
+		{
+			id = "trumpingtonrd3_2",
+			profile = "town",
+			a = "J_trumpingtonrd3_-464_2760",
+			b = "J_trumpingtonrd3_-455_2990",
+			radius = 500,
+			name = "Trumpington Road",
+		},
+		{ id = "trumpingtonrd3_2_2", profile = "town", a = "J_trumpingtonrd3_-455_2990", b = "TP", radius = 500, name = "Trumpington Road" },
+		{ id = "longrd", profile = "town", a = "TR2", b = "J_longrd_-199_2599", radius = 500, name = "Long Road" },
+		{ id = "longrd_2", profile = "town", a = "J_longrd_-199_2599", b = "J_longrd_2_-49_2587", radius = 500, name = "Long Road" },
+		{ id = "longrd_2_3", profile = "town", a = "J_longrd_2_-49_2587", b = "J_longrd_2_226_2566", radius = 500, name = "Long Road" },
+		{
+			id = "longrd_2_3_2",
+			profile = "town",
+			a = "J_longrd_2_226_2566",
+			b = "J_longrd_499_2554",
+			radius = 500,
+			name = "Long Road",
+			via = {
+				{ 300, 2560 },
+			},
+		},
+		{ id = "longrd_2_2", profile = "town", a = "J_longrd_499_2554", b = "H_LONG", radius = 500, name = "Long Road" },
+		{ id = "brooklands", profile = "town", a = "TR1", b = "J_brooklands_-380_1818", radius = 500, name = "Brooklands Avenue" },
+		{
+			id = "brooklands_2",
+			profile = "town",
+			a = "J_brooklands_-380_1818",
+			b = "J_brooklands_148_1665",
+			radius = 500,
+			name = "Brooklands Avenue",
+			via = {
+				{ 0, 1750 },
+			},
+		},
+		{ id = "brooklands_2_2", profile = "town", a = "J_brooklands_148_1665", b = "H1", radius = 500, name = "Brooklands Avenue" },
+		{ id = "bartonrd", profile = "town", a = "RG_SW", b = "BR1", radius = 120, name = "Barton Road" },
+		{ id = "bartonrd2", profile = "aroad", a = "BR1", b = "J_bartonrd2_-1980_797", radius = 600, name = "Barton Road" },
+		{ id = "bartonrd2_2", profile = "aroad", a = "J_bartonrd2_-1980_797", b = "J_bartonrd2_-2380_812", radius = 600, name = "Barton Road" },
+		{ id = "bartonrd2_2_2", profile = "aroad", a = "J_bartonrd2_-2380_812", b = "BR2", radius = 600, name = "Barton Road" },
+		{ id = "grantchesterrd", profile = "lane", a = "BR1", b = "J_grantchesterrd_-1821_1100", radius = 400, name = "Grantchester Road" },
+		{
+			id = "grantchesterrd_2",
+			profile = "lane",
+			a = "J_grantchesterrd_-1821_1100",
+			b = "J_grantchesterrd_-1880_1550",
+			radius = 400,
+			name = "Grantchester Road",
+		},
+		{
+			id = "grantchesterrd_2_2",
+			profile = "lane",
+			a = "J_grantchesterrd_-1880_1550",
+			b = "GRANT",
+			radius = 400,
+			name = "Grantchester Road",
+			via = {
+				{ -1900, 1700 },
+			},
+		},
+		{ id = "grantchester_tp", profile = "lane", a = "GRANT", b = "J_grantchester_tp_-1940_2730", radius = 350, name = "Grantchester Road" },
+		{
+			id = "grantchester_tp_2",
+			profile = "lane",
+			a = "J_grantchester_tp_-1940_2730",
+			b = "J_grantchester_tp_-1644_2878",
+			radius = 350,
+			name = "Grantchester Road",
+		},
+		{
+			id = "grantchester_tp_2_2",
+			profile = "lane",
+			a = "J_grantchester_tp_-1644_2878",
+			b = "TP",
+			radius = 350,
+			name = "Grantchester Road",
+			via = {
+				{ -1600, 2900 },
+				{ -900, 3080 },
+			},
+		},
+		{ id = "madingleyrd", profile = "main", a = "RG_W", b = "MD1", radius = 600, name = "Madingley Road", via = {
+				{ -1800, -700 },
+			} },
+		{
+			id = "a14",
+			profile = "dual",
+			a = "A14_W",
+			b = "A14_E",
+			radius = 3000,
+			name = "A14",
+			via = {
+				{ -4800, -3560 },
+				{ -3450, -3460 },
+				{ -750, -3410 },
+				{ 1100, -3380 },
+				{ 1800, -3365, 0 },
+				{ 2200, -3350, 16 },
+				{ 2480, -3340, 16 },
+				{ 2880, -3320, 0 },
+				{ 3420, -3300 },
+				{ 4800, -3360 },
+			},
+			gaps = {
+				{ 1, 2281.4, 2441.4 },
+				{ 1, 3271.4, 3431.4 },
+				{ -1, 3271.4, 3431.4 },
+				{ -1, 2281.4, 2441.4 },
+				{ 1, 4981.8, 5141.8 },
+				{ 1, 5971.8, 6131.8 },
+				{ -1, 5971.8, 6131.8 },
+				{ -1, 4981.8, 5141.8 },
+				{ 1, 6832, 6992 },
+				{ 1, 7822, 7982 },
+				{ -1, 7822, 7982 },
+				{ -1, 6832, 6992 },
+				{ 1, 9153.4, 9313.4 },
+				{ 1, 10143.4, 10303.4 },
+				{ -1, 10143.4, 10303.4 },
+				{ -1, 9153.4, 9313.4 },
+			},
+		},
+		{
+			id = "GI_off1",
+			profile = "slip",
+			a = "GI_off1",
+			b = "GI",
+			radius = 160,
+			via = {
+				{ -3645.5, -3560.7, 8.8 },
+			},
+			taper = "start",
+			taperFrom = { -4016.5, -3545.6 },
+		},
+		{
+			id = "GI_on1",
+			profile = "slip",
+			a = "GI",
+			b = "GI_on1",
+			radius = 160,
+			via = {
+				{ -3246, -3542.2, 8.8 },
+			},
+			taper = "end",
+			taperFrom = { -2878.1, -3492.9 },
+		},
+		{
+			id = "GI_off-1",
+			profile = "slip",
+			a = "GI_off-1",
+			b = "GI",
+			radius = 160,
+			via = {
+				{ -3254, -3370.4, 8.8 },
+			},
+			taper = "start",
+			taperFrom = { -2882.1, -3406 },
+		},
+		{
+			id = "GI_on-1",
+			profile = "slip",
+			a = "GI",
+			b = "GI_on-1",
+			radius = 160,
+			via = {
+				{ -3653.5, -3388.9, 8.8 },
+			},
+			taper = "end",
+			taperFrom = { -4020.5, -3458.7 },
+		},
+		{ id = "GI_ramp0", profile = "link", a = "GI_arm0", b = "GI", radius = 200, name = "Girton Interchange" },
+		{ id = "GI_ramp1", profile = "link", a = "GI_arm1", b = "GI", radius = 200, name = "Girton Interchange" },
+		{
+			id = "HJ_off1",
+			profile = "slip",
+			a = "HJ_off1",
+			b = "HJ",
+			radius = 160,
+			via = {
+				{ -948.4, -3499.7, 8.8 },
+			},
+			taper = "start",
+			taperFrom = { -1319.1, -3464 },
+		},
+		{
+			id = "HJ_on1",
+			profile = "slip",
+			a = "HJ",
+			b = "HJ_on1",
+			radius = 160,
+			via = {
+				{ -548.4, -3492.7, 8.8 },
+			},
+			taper = "end",
+			taperFrom = { -179.3, -3444.3 },
+		},
+		{
+			id = "HJ_off-1",
+			profile = "slip",
+			a = "HJ_off-1",
+			b = "HJ",
+			radius = 160,
+			via = {
+				{ -551.6, -3320.8, 8.8 },
+			},
+			taper = "start",
+			taperFrom = { -180.9, -3357.3 },
+		},
+		{
+			id = "HJ_on-1",
+			profile = "slip",
+			a = "HJ",
+			b = "HJ_on-1",
+			radius = 160,
+			via = {
+				{ -951.6, -3327.7, 8.8 },
+			},
+			taper = "end",
+			taperFrom = { -1320.7, -3377.1 },
+		},
+		{ id = "HJ_ramp0", profile = "link", a = "HJ_arm0", b = "HJ", radius = 200, name = "Histon" },
+		{ id = "HJ_ramp1", profile = "link", a = "HJ_arm1", b = "HJ", radius = 200, name = "Histon" },
+		{
+			id = "MJ_off1",
+			profile = "slip",
+			a = "MJ_off1",
+			b = "MJ",
+			radius = 160,
+			via = {
+				{ 901.4, -3469.2, 8.8 },
+			},
+			taper = "start",
+			taperFrom = { 530.8, -3432.7 },
+		},
+		{
+			id = "MJ_on1",
+			profile = "slip",
+			a = "MJ",
+			b = "MJ_on1",
+			radius = 160,
+			via = {
+				{ 1301.3, -3461.7, 8.8 },
+			},
+			taper = "end",
+			taperFrom = { 1670.6, -3411.3 },
+		},
+		{
+			id = "MJ_off-1",
+			profile = "slip",
+			a = "MJ_off-1",
+			b = "MJ",
+			radius = 160,
+			via = {
+				{ 1298.6, -3289.7, 8.8 },
+			},
+			taper = "start",
+			taperFrom = { 1669.2, -3324.3 },
+		},
+		{
+			id = "MJ_on-1",
+			profile = "slip",
+			a = "MJ",
+			b = "MJ_on-1",
+			radius = 160,
+			via = {
+				{ 898.6, -3297.3, 8.8 },
+			},
+			taper = "end",
+			taperFrom = { 529.4, -3345.7 },
+		},
+		{ id = "MJ_ramp0", profile = "link", a = "MJ_arm0", b = "MJ", radius = 200, name = "Milton" },
+		{ id = "MJ_ramp1", profile = "link", a = "MJ_arm1", b = "MJ", radius = 200, name = "Milton" },
+		{
+			id = "AJ_off1",
+			profile = "slip",
+			a = "AJ_off1",
+			b = "AJ",
+			radius = 160,
+			via = {
+				{ 3219.8, -3393.4, 8.8 },
+			},
+			taper = "start",
+			taperFrom = { 2850.2, -3365 },
+		},
+		{
+			id = "AJ_on1",
+			profile = "slip",
+			a = "AJ",
+			b = "AJ_on1",
+			radius = 160,
+			via = {
+				{ 3619.6, -3394.7, 8.8 },
+			},
+			taper = "end",
+			taperFrom = { 3989.4, -3368.3 },
+		},
+		{
+			id = "AJ_off-1",
+			profile = "slip",
+			a = "AJ_off-1",
+			b = "AJ",
+			radius = 160,
+			via = {
+				{ 3620.2, -3222.7, 8.8 },
+			},
+			taper = "start",
+			taperFrom = { 3989.7, -3281.3 },
+		},
+		{
+			id = "AJ_on-1",
+			profile = "slip",
+			a = "AJ",
+			b = "AJ_on-1",
+			radius = 160,
+			via = {
+				{ 3220.3, -3221.4, 8.8 },
+			},
+			taper = "end",
+			taperFrom = { 2850.4, -3278 },
+		},
+		{ id = "AJ_ramp0", profile = "link", a = "AJ_arm0", b = "AJ", radius = 200, name = "Fen Ditton" },
+		{ id = "AJ_ramp1", profile = "link", a = "AJ_arm1", b = "AJ", radius = 200, name = "Fen Ditton" },
+		{
+			id = "m11",
+			profile = "motorway",
+			a = "GI",
+			b = "M11_S",
+			radius = 2600,
+			name = "M11",
+			via = {
+				{ -3520, -2600, 0 },
+				{ -3550, -850 },
+				{ -3480, 780 },
+				{ -3200, 2300 },
+				{ -2300, 3520 },
+				{ -750, 4060 },
+				{ 250, 4500 },
+			},
+			gaps = {
+				{ 1, 2040.3, 2200.3 },
+				{ 1, 3030.3, 3190.3 },
+				{ -1, 3030.3, 3190.3 },
+				{ -1, 2040.3, 2200.3 },
+				{ 1, 3671.4, 3831.4 },
+				{ 1, 4661.4, 4821.4 },
+				{ -1, 4661.4, 4821.4 },
+				{ -1, 3671.4, 3831.4 },
+				{ 1, 8308.5, 8468.5 },
+				{ 1, 9298.5, 9458.5 },
+				{ -1, 9298.5, 9458.5 },
+				{ -1, 8308.5, 8468.5 },
+			},
+		},
+		{
+			id = "J13_off1",
+			profile = "slip",
+			a = "J13_off1",
+			b = "J13",
+			radius = 160,
+			via = {
+				{ -3452.1, -1051.2, 8.8 },
+			},
+			taper = "start",
+			taperFrom = { -3488.2, -1420.6 },
+		},
+		{
+			id = "J13_on1",
+			profile = "slip",
+			a = "J13",
+			b = "J13_on1",
+			radius = 160,
+			via = {
+				{ -3446.9, -651.4, 8.8 },
+			},
+			taper = "end",
+			taperFrom = { -3473.5, -281.2 },
+		},
+		{
+			id = "J13_off-1",
+			profile = "slip",
+			a = "J13_off-1",
+			b = "J13",
+			radius = 160,
+			via = {
+				{ -3635.9, -648.9, 8.8 },
+			},
+			taper = "start",
+			taperFrom = { -3577.5, -279.8 },
+		},
+		{
+			id = "J13_on-1",
+			profile = "slip",
+			a = "J13",
+			b = "J13_on-1",
+			radius = 160,
+			via = {
+				{ -3641.1, -1048.8, 8.8 },
+			},
+			taper = "end",
+			taperFrom = { -3592.2, -1419.3 },
+		},
+		{ id = "J13_ramp0", profile = "link", a = "J13_arm0", b = "J13", radius = 200, name = "Junction 13" },
+		{ id = "J13_ramp1", profile = "link", a = "J13_arm1", b = "J13", radius = 200, name = "Junction 13" },
+		{
+			id = "J12_off1",
+			profile = "slip",
+			a = "J12_off1",
+			b = "J12",
+			radius = 160,
+			via = {
+				{ -3394.4, 572.5, 8.8 },
+			},
+			taper = "start",
+			taperFrom = { -3452.6, 206.2 },
+		},
+		{
+			id = "J12_on1",
+			profile = "slip",
+			a = "J12",
+			b = "J12_on1",
+			radius = 160,
+			via = {
+				{ -3349.5, 969.7, 8.8 },
+			},
+			taper = "end",
+			taperFrom = { -3324.8, 1336.9 },
+		},
+		{
+			id = "J12_off-1",
+			profile = "slip",
+			a = "J12_off-1",
+			b = "J12",
+			radius = 160,
+			via = {
+				{ -3537.9, 984.4, 8.8 },
+			},
+			taper = "start",
+			taperFrom = { -3428.5, 1344.9 },
+		},
+		{
+			id = "J12_on-1",
+			profile = "slip",
+			a = "J12",
+			b = "J12_on-1",
+			radius = 160,
+			via = {
+				{ -3582.8, 587.2, 8.8 },
+			},
+			taper = "end",
+			taperFrom = { -3556.3, 214.2 },
+		},
+		{ id = "J12_ramp0", profile = "link", a = "J12_arm0", b = "J12", radius = 200, name = "Junction 12" },
+		{ id = "J12_ramp1", profile = "link", a = "J12_arm1", b = "J12", radius = 200, name = "Junction 12" },
+		{
+			id = "J11_off1",
+			profile = "slip",
+			a = "J11_off1",
+			b = "J11",
+			radius = 160,
+			via = {
+				{ -904.3, 3906.2, 8.8 },
+			},
+			taper = "start",
+			taperFrom = { -1269.3, 3824.1 },
+		},
+		{
+			id = "J11_on1",
+			profile = "slip",
+			a = "J11",
+			b = "J11_on1",
+			radius = 160,
+			via = {
+				{ -532.3, 4052.6, 8.8 },
+			},
+			taper = "end",
+			taperFrom = { -209.2, 4241.2 },
+		},
+		{
+			id = "J11_off-1",
+			profile = "slip",
+			a = "J11_off-1",
+			b = "J11",
+			radius = 160,
+			via = {
+				{ -601.5, 4228.5, 8.8 },
+			},
+			taper = "start",
+			taperFrom = { -247.2, 4338 },
+		},
+		{
+			id = "J11_on-1",
+			profile = "slip",
+			a = "J11",
+			b = "J11_on-1",
+			radius = 160,
+			via = {
+				{ -973.5, 4082.1, 8.8 },
+			},
+			taper = "end",
+			taperFrom = { -1307.4, 3920.8 },
+		},
+		{ id = "J11_ramp0", profile = "link", a = "J11_arm0", b = "J11", radius = 200, name = "Junction 11" },
+		{ id = "J11_ramp1", profile = "link", a = "J11_arm1", b = "J11", radius = 200, name = "Junction 11" },
+		{ id = "huntingdon3", profile = "aroad", a = "GIRTON", b = "GI_arm1", radius = 500, name = "Huntingdon Road" },
+		{ id = "histonrd2", profile = "aroad", a = "HR1", b = "HJ_arm1", radius = 600, name = "Histon Road", via = {
+				{ -780, -2900 },
+			} },
+		{ id = "histonrd3", profile = "town", a = "HJ_arm0", b = "J_histonrd3_-720_-3961", radius = 400, name = "Histon Road" },
+		{ id = "histonrd3_2", profile = "town", a = "J_histonrd3_-720_-3961", b = "J_histonrd3_-707_-4180", radius = 400, name = "Histon Road" },
+		{ id = "histonrd3_2_2", profile = "town", a = "J_histonrd3_-707_-4180", b = "HISTON", radius = 400, name = "Histon Road" },
+		{ id = "miltonrd2", profile = "main", a = "MI1", b = "MJ_arm1", radius = 600, name = "Milton Road", via = {
+				{ 820, -2900 },
+			} },
+		{ id = "miltonrd3", profile = "town", a = "MJ_arm0", b = "J_miltonrd3_1219_-3922", radius = 400, name = "Milton High Street" },
+		{
+			id = "miltonrd3_2",
+			profile = "town",
+			a = "J_miltonrd3_1219_-3922",
+			b = "J_miltonrd3_1312_-4138",
+			radius = 400,
+			name = "Milton High Street",
+			via = {
+				{ 1250, -3950 },
+			},
+		},
+		{ id = "miltonrd3_2_2", profile = "town", a = "J_miltonrd3_1312_-4138", b = "MILTON", radius = 400, name = "Milton High Street" },
+		{ id = "airportway", profile = "aroad", a = "NR3", b = "FD", radius = 600, name = "Airport Way", via = {
+				{ 3300, -1500 },
+			} },
+		{
+			id = "horningsea",
+			profile = "aroad",
+			a = "FD",
+			b = "AJ_arm1",
+			radius = 500,
+			name = "Horningsea Road",
+			via = {
+				{ 3320, -2700 },
+			},
+		},
+		{
+			id = "horningsea2",
+			profile = "lane",
+			a = "AJ_arm0",
+			b = "HORN",
+			radius = 400,
+			name = "Horningsea Road",
+			via = {
+				{ 3550, -3900 },
+			},
+		},
+		{ id = "buttlane", profile = "lane", a = "HISTON", b = "MILTON", radius = 500, name = "Butt Lane", via = {
+				{ 200, -4500 },
+			} },
+		{ id = "miltonhorn", profile = "lane", a = "MILTON", b = "HORN", radius = 500, name = "Clayhithe Road", via = {
+				{ 2500, -4500 },
+			} },
+		{ id = "oakington", profile = "lane", a = "GI_arm0", b = "OAK", radius = 400, name = "Oakington Road", via = {
+				{ -3500, -4200 },
+			} },
+		{
+			id = "dittonlane",
+			profile = "lane",
+			a = "FD",
+			b = "DITTON_W",
+			radius = 400,
+			name = "Fen Ditton High Street",
+			via = {
+				{ 2800, -2000 },
+			},
+		},
+		{ id = "dittonwalk", profile = "town", a = "DITTON_W", b = "NR1", radius = 400, name = "Ditton Walk", via = {
+				{ 2050, -1500 },
+			} },
+		{
+			id = "madingleyrd2",
+			profile = "aroad",
+			a = "MD1",
+			b = "J13_arm0",
+			radius = 600,
+			name = "Madingley Road",
+			via = {
+				{ -2950, -820 },
+			},
+		},
+		{
+			id = "madingleyrd3",
+			profile = "aroad",
+			a = "J13_arm1",
+			b = "J_madingleyrd3_-4458_-1157",
+			radius = 700,
+			name = "Madingley Road",
+			via = {
+				{ -4300, -1100 },
+			},
+		},
+		{
+			id = "madingleyrd3_2",
+			profile = "aroad",
+			a = "J_madingleyrd3_-4458_-1157",
+			b = "J_madingleyrd3_-4851_-1297",
+			radius = 700,
+			name = "Madingley Road",
+		},
+		{ id = "madingleyrd3_2_2", profile = "aroad", a = "J_madingleyrd3_-4851_-1297", b = "MADINGLEY", radius = 700, name = "Madingley Road" },
+		{
+			id = "madingley_w",
+			profile = "lane",
+			a = "MADINGLEY",
+			b = "MAD_W",
+			radius = 500,
+			name = "Madingley Road",
+			via = {
+				{ -5700, -1450 },
+			},
+		},
+		{ id = "cotonrd", profile = "lane", a = "J13_arm1", b = "COTON", radius = 400, name = "Coton Road", via = {
+				{ -4100, -600 },
+			} },
+		{ id = "bartonrd3", profile = "aroad", a = "BR2", b = "J12_arm0", radius = 600, name = "Barton Road", via = {
+				{ -3050, 800 },
+			} },
+		{
+			id = "bartonrd4",
+			profile = "aroad",
+			a = "J12_arm1",
+			b = "J_bartonrd4_-4252_878",
+			radius = 700,
+			name = "Barton Road",
+			via = {
+				{ -4200, 870 },
+			},
+		},
+		{ id = "bartonrd4_2", profile = "aroad", a = "J_bartonrd4_-4252_878", b = "J_bartonrd4_-4650_938", radius = 700, name = "Barton Road" },
+		{ id = "bartonrd4_2_2", profile = "aroad", a = "J_bartonrd4_-4650_938", b = "BARTON", radius = 700, name = "Barton Road" },
+		{
+			id = "barton_w",
+			profile = "lane",
+			a = "BARTON",
+			b = "BARTON_W",
+			radius = 500,
+			name = "Comberton Road",
+			via = {
+				{ -5600, 1000 },
+			},
+		},
+		{ id = "cotonbarton", profile = "lane", a = "COTON", b = "BARTON", radius = 400, name = "Barton Lane", via = {
+				{ -4650, 450 },
+			} },
+		{ id = "hauxton", profile = "aroad", a = "TP", b = "J_hauxton_-464_3250", radius = 500, name = "Hauxton Road" },
+		{ id = "hauxton_2", profile = "aroad", a = "J_hauxton_-464_3250", b = "J_hauxton_-492_3521", radius = 500, name = "Hauxton Road" },
+		{
+			id = "hauxton_2_2",
+			profile = "aroad",
+			a = "J_hauxton_-492_3521",
+			b = "J11_arm0",
+			radius = 500,
+			name = "Hauxton Road",
+			via = {
+				{ -500, 3600 },
+			},
+		},
+		{ id = "hauxton2", profile = "lane", a = "J11_arm1", b = "HAUX", radius = 400, name = "Hauxton Road", via = {
+				{ -1000, 4400 },
+			} },
+		{
+			id = "grantchester_m",
+			profile = "lane",
+			a = "GRANT",
+			b = "BR2",
+			radius = 400,
+			name = "Barton Road",
+			via = {
+				{ -2550, 2000 },
+				{ -2700, 1300 },
+			},
+		},
+		{ id = "romsey_back", profile = "terrace", a = "MR1", b = "J_romsey_back_2136_854", radius = 500, name = "Coleridge Road" },
+		{
+			id = "romsey_back_2",
+			profile = "terrace",
+			a = "J_romsey_back_2136_854",
+			b = "J_romsey_back_2211_558",
+			radius = 500,
+			name = "Coleridge Road",
+		},
+		{
+			id = "romsey_back_2_2",
+			profile = "terrace",
+			a = "J_romsey_back_2211_558",
+			b = "NR2",
+			radius = 500,
+			name = "Coleridge Road",
+			via = {
+				{ 2250, 400 },
+			},
+		},
+		{ id = "rung1", profile = "terrace", a = "J_millrd2_2350_1060", b = "J_rung1_2350_1210", radius = 120, name = "Coleridge Road" },
+		{ id = "rung1_2", profile = "terrace", a = "J_rung1_2350_1210", b = "J_rung1_2350_1516", radius = 120, name = "Coleridge Road" },
+		{ id = "rung1_2_2", profile = "terrace", a = "J_rung1_2350_1516", b = "J_cherryhintonrd_2350_1859", radius = 120, name = "Coleridge Road" },
+		{ id = "rung2", profile = "terrace", a = "J_millrd2_2600_1120", b = "J_cherryhintonrd_2600_1623", radius = 120, name = "Marshall Road" },
+		{
+			id = "cres3",
+			profile = "terrace",
+			a = "J_coldhams_2562_-421",
+			b = "J_coldhams_2712_-4",
+			radius = 90,
+			name = "Vinery Road",
+			via = {
+				{ 2736.4, -409.2 },
+				{ 2839.1, -124.6 },
+			},
+		},
+		{
+			id = "cres4",
+			profile = "terrace",
+			a = "J_chesterton2_256_-1681",
+			b = "J_chesterton2_899_-1796",
+			radius = 90,
+			name = "De Freville Avenue",
+			via = {
+				{ 354.4, -1526 },
+				{ 860.4, -1616.2 },
+			},
+		},
+		{
+			id = "cres5",
+			profile = "terrace",
+			a = "J_miltonrd_-14_-1791",
+			b = "J_miltonrd_229_-2125",
+			radius = 90,
+			name = "Gilbert Road",
+			via = {
+				{ -118.5, -1953 },
+				{ 42.2, -2174.4 },
+			},
+		},
+		{ id = "cres6", profile = "terrace", a = "J_kingshedges_-647_-2335", b = "J_cres6_-588_-2197", radius = 90, name = "Arbury Road" },
+		{
+			id = "cres6_2",
+			profile = "terrace",
+			a = "J_cres6_-588_-2197",
+			b = "J_cres6_-363_-2154",
+			radius = 90,
+			name = "Arbury Road",
+			via = {
+				{ -563.4, -2140.2 },
+			},
+		},
+		{
+			id = "cres6_2_2",
+			profile = "terrace",
+			a = "J_cres6_-363_-2154",
+			b = "J_kingshedges_96_-2387",
+			radius = 90,
+			name = "Arbury Road",
+			via = {
+				{ 40.3, -2182.2 },
+			},
+		},
+		{
+			id = "cres7",
+			profile = "terrace",
+			a = "J_histonrd_-917_-1452",
+			b = "J_histonrd_-855_-2000",
+			radius = 90,
+			name = "Victoria Road",
+			via = {
+				{ -1097.6, -1543.3 },
+				{ -1051.7, -1951.3 },
+			},
+		},
+		{
+			id = "cres8",
+			profile = "terrace",
+			a = "J_huntingdon_-1273_-1530",
+			b = "J_cres8_-1243_-1742",
+			radius = 90,
+			name = "Storey's Way",
+			via = {
+				{ -1200.7, -1699.2 },
+			},
+		},
+		{ id = "cres8_2", profile = "terrace", a = "J_cres8_-1243_-1742", b = "J_cres8_-1415_-1918", radius = 90, name = "Storey's Way" },
+		{
+			id = "cres8_2_2",
+			profile = "terrace",
+			a = "J_cres8_-1415_-1918",
+			b = "J_huntingdon_-1643_-1908",
+			radius = 90,
+			name = "Storey's Way",
+			via = {
+				{ -1472, -1976.7 },
+			},
+		},
+		{
+			id = "cres9",
+			profile = "terrace",
+			a = "J_bartonrd2_-1980_797",
+			b = "J_bartonrd2_-2380_812",
+			radius = 90,
+			name = "Newnham Road",
+			via = {
+				{ -2043.7, 969.8 },
+				{ -2303.7, 979.3 },
+			},
+		},
+		{
+			id = "cres10",
+			profile = "terrace",
+			a = "J_grantchesterrd_-1821_1100",
+			b = "J_grantchesterrd_-1880_1550",
+			radius = 90,
+			name = "Grange Road",
+			via = {
+				{ -1651.6, 1192.8 },
+				{ -1692.6, 1504.1 },
+			},
+		},
+		{
+			id = "cres11",
+			profile = "terrace",
+			a = "J_trumpingtonrd2_-537_2045",
+			b = "J_trumpingtonrd2_-490_2445",
+			radius = 90,
+			name = "Chaucer Road",
+			via = {
+				{ -330.4, 2091.3 },
+				{ -299.9, 2352.6 },
+			},
+		},
+		{
+			id = "cres12",
+			profile = "terrace",
+			a = "J_longrd_-199_2599",
+			b = "J_cres12_-58_2399",
+			radius = 90,
+			name = "Long Road",
+			via = {
+				{ -141, 2404.7 },
+			},
+		},
+		{ id = "cres12_2", profile = "terrace", a = "J_cres12_-58_2399", b = "J_cres12_253_2379", radius = 90, name = "Long Road" },
+		{
+			id = "cres12_2_2",
+			profile = "terrace",
+			a = "J_cres12_253_2379",
+			b = "J_longrd_499_2554",
+			radius = 90,
+			name = "Long Road",
+			via = {
+				{ 417.3, 2368.5 },
+			},
+		},
+		{
+			id = "cres13",
+			profile = "terrace",
+			a = "J_cherryhintonrd_1745_2100",
+			b = "J_cherryhintonrd_2126_1949",
+			radius = 90,
+			name = "Perne Road",
+			via = {
+				{ 1735.9, 1888.5 },
+				{ 1986.5, 1788.7 },
+			},
+		},
+		{
+			id = "cres14",
+			profile = "terrace",
+			a = "J_hillsrd2_559_1650",
+			b = "J_hillsrd2_729_1975",
+			radius = 90,
+			name = "Glebe Road",
+			via = {
+				{ 440.8, 1791.2 },
+				{ 545.7, 1992.1 },
+			},
+		},
+		{
+			id = "cres15",
+			profile = "terrace",
+			a = "J_brooklands_-380_1818",
+			b = "J_brooklands_148_1665",
+			radius = 90,
+			name = "Brooklands Avenue",
+			via = {
+				{ -357.6, 1644.8 },
+				{ 36.5, 1530.6 },
+			},
+		},
+		{
+			id = "cres16",
+			profile = "terrace",
+			a = "J_fulbournrd_3950_1508",
+			b = "J_fulbournrd_4501_1555",
+			radius = 90,
+			name = "Fulbourn Old Drift",
+			via = {
+				{ 4001.6, 1733.5 },
+				{ 4412.6, 1768.2 },
+			},
+		},
+		{
+			id = "cres17",
+			profile = "terrace",
+			a = "J_cherryhintonhigh_3101_1247",
+			b = "J_cherryhintonhigh_3548_1424",
+			radius = 90,
+			name = "High Street",
+			via = {
+				{ 3228.5, 1114.6 },
+				{ 3545.5, 1240.2 },
+			},
+		},
+		{
+			id = "cres18",
+			profile = "terrace",
+			a = "J_trumpingtonrd3_-464_2760",
+			b = "J_trumpingtonrd3_-455_2990",
+			radius = 90,
+			name = "Anstey Way",
+			via = {
+				{ -241.8, 2821.1 },
+				{ -238.2, 2911.3 },
+			},
+		},
+		{
+			id = "cres19",
+			profile = "terrace",
+			a = "J_hauxton_-464_3250",
+			b = "J_hauxton_-492_3521",
+			radius = 90,
+			name = "Clay Farm",
+			via = {
+				{ -689.6, 3296.5 },
+				{ -703.3, 3428.4 },
+			},
+		},
+		{
+			id = "cres20",
+			profile = "high",
+			a = "J_histonrd3_-720_-3961",
+			b = "J_histonrd3_-707_-4180",
+			radius = 90,
+			name = "Histon High Street",
+			via = {
+				{ -885.4, -4041 },
+				{ -880.8, -4120.4 },
+			},
+		},
+		{
+			id = "cres21",
+			profile = "high",
+			a = "J_miltonrd3_1219_-3922",
+			b = "J_miltonrd3_1312_-4138",
+			radius = 90,
+			name = "Milton High Street",
+			via = {
+				{ 1420.9, -3910.4 },
+				{ 1458.8, -3997.6 },
+			},
+		},
+		{
+			id = "cres22",
+			profile = "high",
+			a = "J_huntingdon2_-2141_-2361",
+			b = "J_huntingdon2_-2488_-2664",
+			radius = 90,
+			name = "Girton High Street",
+			via = {
+				{ -2325.1, -2256.2 },
+				{ -2566.6, -2467.5 },
+			},
+		},
+		{
+			id = "cres23",
+			profile = "terrace",
+			a = "J_grantchester_tp_-1940_2730",
+			b = "J_grantchester_tp_-1644_2878",
+			radius = 90,
+			name = "Mill Way",
+			via = {
+				{ -1805.8, 2618.2 },
+				{ -1635.1, 2703.6 },
+			},
+		},
+		{
+			id = "cres24",
+			profile = "terrace",
+			a = "J_madingleyrd3_-4458_-1157",
+			b = "J_madingleyrd3_-4851_-1297",
+			radius = 90,
+			name = "Madingley High Street",
+			via = {
+				{ -4467.1, -1340.2 },
+				{ -4728, -1433.4 },
+			},
+		},
+		{
+			id = "cres25",
+			profile = "terrace",
+			a = "J_bartonrd4_-4252_878",
+			b = "J_bartonrd4_-4650_938",
+			radius = 90,
+			name = "Barton High Street",
+			via = {
+				{ -4297.3, 1046.4 },
+				{ -4557.4, 1085.4 },
+			},
+		},
+		{
+			id = "cres26",
+			profile = "terrace",
+			a = "J_fulbourn_e_5201_1664",
+			b = "J_fulbourn_e_5551_1696",
+			radius = 90,
+			name = "Fulbourn High Street",
+			via = {
+				{ 5286.6, 1500.8 },
+				{ 5496.3, 1520 },
+			},
+		},
+		{
+			id = "cres27",
+			profile = "terrace",
+			a = "J_chesterton_-758_-1339",
+			b = "J_chesterton_-506_-1484",
+			radius = 90,
+			via = {
+				{ -812.2, -1572.4 },
+				{ -682.2, -1647.8 },
+			},
+		},
+		{
+			id = "cres28",
+			profile = "terrace",
+			a = "J_chesterton2_2_399_-1724",
+			b = "J_chesterton2_2_729_-1780",
+			radius = 90,
+			via = {
+				{ 407.5, -2095.4 },
+				{ 599.2, -2127.8 },
+			},
+		},
+		{
+			id = "cres29",
+			profile = "terrace",
+			a = "J_cowley_566_-2383",
+			b = "J_cowley_860_-2449",
+			radius = 90,
+			via = {
+				{ 672.1, -2231 },
+				{ 829.1, -2266.1 },
+			},
+		},
+		{
+			id = "cres30",
+			profile = "terrace",
+			a = "J_millrd_1588_872",
+			b = "J_millrd_1935_959",
+			radius = 90,
+			via = {
+				{ 1748.6, 520.3 },
+				{ 1959.4, 573 },
+			},
+		},
+		{
+			id = "cres31",
+			profile = "terrace",
+			a = "J_coldhams_2_2_2787_498",
+			b = "J_coldhams_2_2_2812_769",
+			radius = 90,
+			via = {
+				{ 2963.9, 551.8 },
+				{ 2976.1, 683.6 },
+			},
+		},
+		{
+			id = "cres32",
+			profile = "terrace",
+			a = "J_hillsrd_293_1024",
+			b = "J_hillsrd_403_1322",
+			radius = 90,
+			via = {
+				{ 690.7, 951.1 },
+				{ 752.4, 1117.9 },
+			},
+		},
+		{
+			id = "cres33",
+			profile = "terrace",
+			a = "J_stationrd_696_1522",
+			b = "J_stationrd_1013_1581",
+			radius = 90,
+			via = {
+				{ 844.5, 1107.1 },
+				{ 1023.6, 1140.4 },
+			},
+		},
+		{
+			id = "cres34",
+			profile = "terrace",
+			a = "J_cherryhintonrd_970_2145",
+			b = "J_cherryhintonrd_1305_2133",
+			radius = 90,
+			via = {
+				{ 1025.3, 1716.1 },
+				{ 1220.7, 1709.4 },
+			},
+		},
+		{
+			id = "cres35",
+			profile = "terrace",
+			a = "J_trumpingtonrd_-645_1120",
+			b = "J_trumpingtonrd_-630_1413",
+			radius = 90,
+			via = {
+				{ -413.3, 1177.7 },
+				{ -405.2, 1330.8 },
+			},
+		},
+		{
+			id = "cres36",
+			profile = "terrace",
+			a = "J_longrd_2_-49_2587",
+			b = "J_longrd_2_226_2566",
+			radius = 90,
+			via = {
+				{ 37.2, 2792 },
+				{ 172.6, 2781.4 },
+			},
+		},
+		{
+			id = "cres37",
+			profile = "terrace",
+			a = "J_romsey_back_2136_854",
+			b = "J_romsey_back_2211_558",
+			radius = 90,
+			via = {
+				{ 2521.8, 878.7 },
+				{ 2562, 717.7 },
+			},
+		},
+		{
+			id = "cres38",
+			profile = "terrace",
+			a = "J_rung1_2350_1210",
+			b = "J_rung1_2350_1516",
+			radius = 90,
+			via = {
+				{ 1920.8, 1280 },
+				{ 1920.8, 1446.2 },
+			},
+		},
+		{
+			id = "cres39",
+			profile = "terrace",
+			a = "J_cres6_-588_-2197",
+			b = "J_cres6_-363_-2154",
+			radius = 90,
+			via = {
+				{ -557.8, -1980.4 },
+				{ -470.3, -1963.7 },
+			},
+		},
+		{
+			id = "cres40",
+			profile = "terrace",
+			a = "J_cres12_-58_2399",
+			b = "J_cres12_253_2379",
+			radius = 90,
+			via = {
+				{ -14.4, 1984.6 },
+				{ 156.6, 1973.5 },
+			},
+		},
+		{
+			id = "cres41",
+			profile = "terrace",
+			a = "J_cres8_-1243_-1742",
+			b = "J_cres8_-1415_-1918",
+			radius = 90,
+			via = {
+				{ -1136.3, -1944.7 },
+				{ -1209.9, -2020 },
+			},
+		},
+	},
+	river = {
+		width = 46,
+		radius = 260,
+		points = {
+			{ -2350, 5200 },
+			{ -2150, 4200 },
+			{ -1950, 3200 },
+			{ -1600, 2300 },
+			{ -1250, 1500 },
+			{ -1080, 950 },
+			{ -960, 400 },
+			{ -920, -250 },
+			{ -830, -760 },
+			{ -520, -1050 },
+			{ 0, -1150 },
+			{ 600, -1300 },
+			{ 1250, -1420 },
+			{ 2000, -1700 },
+			{ 2800, -2200 },
+			{ 3600, -2650 },
+			{ 4600, -3050 },
+			{ 5600, -3450 },
+			{ 6800, -3800 },
+		},
+	},
+	railway = {
+		points = {
+			{ 1700, 5200 },
+			{ 1600, 3600 },
+			{ 1480, 2500 },
+			{ 1420, 1700 },
+			{ 1450, 600 },
+			{ 1560, -600 },
+			{ 1760, -1550 },
+			{ 2100, -2600 },
+			{ 2350, -3400 },
+			{ 2650, -4600 },
+			{ 2850, -5400 },
+		},
+		stations = {
+			{ "Cambridge", 1420, 1700 },
+			{ "Cambridge North", 2120, -2700 },
+		},
+		crossings = {
+			{ 1633.4, -948.6, "newmarket" },
+			{ 1443.6, 833.3, "millrd" },
+			{ 1452.1, 2128.4, "cherryhintonrd_4_2" },
+			{ 1526.9, 2929.6, "babraham" },
+			{ 2618.8, -4475.2, "miltonhorn" },
+		},
+	},
+	areas = {
+		{
+			"colleges",
+			{
+				{ -900, -1000 },
+				{ -500, -1000 },
+				{ -500, 800 },
+				{ -900, 800 },
+			},
+		},
+		{
+			"oldcity",
+			{
+				{ -500, -900 },
+				{ 1000, -900 },
+				{ 1000, 850 },
+				{ -500, 850 },
+			},
+		},
+		{
+			"backs",
+			{
+				{ -1220, -600 },
+				{ -900, -600 },
+				{ -900, 720 },
+				{ -1220, 720 },
+			},
+		},
+		{
+			"station",
+			{
+				{ 450, 1300 },
+				{ 1400, 1300 },
+				{ 1400, 2100 },
+				{ 450, 2100 },
+			},
+		},
+		{
+			"terraces",
+			{
+				{ 1100, 300 },
+				{ 3000, 300 },
+				{ 3000, 2000 },
+				{ 1100, 2000 },
+			},
+		},
+		{
+			"retail",
+			{
+				{ 1600, -1500 },
+				{ 2800, -1500 },
+				{ 2800, -400 },
+				{ 1600, -400 },
+			},
+		},
+		{
+			"hospital",
+			{
+				{ 650, 2950 },
+				{ 1450, 2950 },
+				{ 1450, 3700 },
+				{ 650, 3700 },
+			},
+		},
+		{
+			"sciencepark",
+			{
+				{ -150, -3150 },
+				{ 650, -3150 },
+				{ 650, -2450 },
+				{ -150, -2450 },
+			},
+		},
+		{
+			"industrial",
+			{
+				{ 900, -2900 },
+				{ 2000, -2900 },
+				{ 2000, -2200 },
+				{ 900, -2200 },
+			},
+		},
+		{
+			"westcam",
+			{
+				{ -2800, -1100 },
+				{ -1400, -1100 },
+				{ -1400, -300 },
+				{ -2800, -300 },
+			},
+		},
+		{
+			"suburb",
+			{
+				{ -1500, -2600 },
+				{ 1250, -2600 },
+				{ 1250, -1250 },
+				{ -1500, -1250 },
+			},
+		},
+		{
+			"suburb",
+			{
+				{ -1700, 700 },
+				{ -300, 700 },
+				{ -300, 3300 },
+				{ -1700, 3300 },
+			},
+		},
+		{
+			"suburb",
+			{
+				{ -300, 900 },
+				{ 1500, 900 },
+				{ 1500, 2900 },
+				{ -300, 2900 },
+			},
+		},
+		{
+			"suburb",
+			{
+				{ 2000, 900 },
+				{ 4000, 900 },
+				{ 4000, 2400 },
+				{ 2000, 2400 },
+			},
+		},
+		{
+			"suburb",
+			{
+				{ 1100, -1300 },
+				{ 2400, -1300 },
+				{ 2400, -400 },
+				{ 1100, -400 },
+			},
+		},
+	},
+	villages = {
+		{ "Grantchester", -1950, 2780, 420 },
+		{ "Girton", -2500, -2650, 450 },
+		{ "Histon", -700, -4050, 450 },
+		{ "Milton", 1320, -4000, 420 },
+		{ "Fen Ditton", 2900, -2050, 350 },
+		{ "Horningsea", 3700, -4250, 300 },
+		{ "Cherry Hinton", 3500, 1450, 500 },
+		{ "Fulbourn", 5300, 1680, 420 },
+		{ "Coton", -4400, -150, 300 },
+		{ "Madingley", -4800, -1280, 350 },
+		{ "Barton", -4600, 930, 350 },
+		{ "Trumpington", -350, 3300, 500 },
+	},
+	sites = {
+		{ "parkerspiece", 330, 160, 885, 750 },
+		{ "jesusgreen", -380, -1080, 250, -760 },
+		{ "midsummer", 300, -1250, 1050, -1000 },
+		{ "christspieces", 20, -560, 220, -260 },
+		{ "marketsquare", -100, -110, 110, 40 },
+		{ "kingscollege", -900, 120, -520, 420 },
+		{ "coldhamscommon", 2450, -700, 3050, -150 },
+		{ "stadium", 1900, -800, 2300, -450 },
+		{ "coefen", -1180, 1050, -700, 1650 },
+		{ "sheepsgreen", -1220, 450, -980, 740 },
+		{ "botanic", -330, 1100, 285, 1500 },
+		{ "airport", 3560, -700, 4500, 600 },
+		{ "lakes", -60, -3080, 250, -2850 },
+	},
+	frontSites = {
+		{ kind = "petrol", x = 2128.8, z = -934.5, fx = -0.11, fz = 0.99, width = 240, depth = 170 },
+		{ kind = "busgarage", x = 1379.8, z = -2502, fx = -0.11, fz = -0.99, width = 320, depth = 260 },
+		{ kind = "police", x = 706.7, z = 38.8, fx = 0, fz = 1, width = 220, depth = 150 },
+	},
+}
+]])
+put(folder4, "ModuleScript", "CambridgeMap", [=[
+-- Builds the Cambridge map when the game starts, from CambridgeLayout (made by tools/cambridge_layout.py): a
+-- compact old city on the River Cam with the countryside and villages all round it, like Birmingham Vehicle
+-- Simulator but with more different places to drive. About 13,000 by 10,000 studs.
+--   * patchwork fields (grass, wheat, barley, ploughed earth, the odd yellow rapeseed field) with hedgerows and
+--     trees along them, and woods here and there
+--   * the Cam with grassy banks out in the country and stone edges through the colleges
+--   * every road (see RoadNetwork), in the look of the AHDEV UK road pack, with hedges along the country lanes
+--   * the railway with level crossings and two stations
+--   * streets lined with buildings to suit each area: colleges, shops, terraces, semis, village houses, the
+--     retail park, the science park, the hospital
+--   * parks, the Market Square, the college chapel, the football ground, the airfield, and the team depots
+--
+-- It also fills in ReplicatedStorage → MapInfo, which the menus and minimap read (MenuCamera, Showroom_<team>,
+-- Minimap, ParkedCars, Pavements), and Workspace → Depots (one model per team with "Spawn" parts).
+--
+-- To look round it in Studio without pressing Play, run this in the Command Bar:
+--   require(game.ServerScriptService.Server.CambridgeMap).build()
+-- and require(game.ServerScriptService.Server.CambridgeMap).clear() before saving or pressing Play.
+
+local HttpService = game:GetService("HttpService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local ServerStorage = game:GetService("ServerStorage")
+local Workspace = game:GetService("Workspace")
+
+local CambridgeLayout = require(script.Parent.CambridgeLayout)
+local CityBuildings = require(script.Parent.CityBuildings)
+local RoadKit = require(script.Parent.RoadKit)
+local RoadNetwork = require(script.Parent.RoadNetwork)
+local TownBuildings = require(script.Parent.TownBuildings)
+local TownKit = require(script.Parent.TownKit)
+local TownProps = require(script.Parent.TownProps)
+
+local C = TownKit.Colours
+local box = TownKit.box
+local ROAD_TOP = TownKit.ROAD_TOP
+local PAVEMENT_TOP = TownKit.PAVEMENT_TOP
+local KERB_WIDTH = TownKit.KERB_WIDTH
+
+local layout: any = CambridgeLayout
+local MIN_X, MAX_X, MIN_Z, MAX_Z = layout.bounds[1], layout.bounds[3], layout.bounds[2], layout.bounds[4]
+local RIVER_BED = -8
+local WATER_TOP = -1.6
+
+local CambridgeMap = {}
+
+local random = Random.new(2026) -- the same "random" city every time
+local folder: Folder
+local mapInfo: Configuration
+local minimap: { { any } } = {}
+local farAway: Model
+
+-- Spots along the kerbs (and on drives) where parked cars go. ParkedCars (on each player's device) puts cars in
+-- the ones near you. Each spot is { x, y, z, degrees turned }.
+local parkingSpots: { { number } } = {}
+local groundModel: Model
+
+-- What's on the ground, in 4-stud squares, so buildings don't land on roads --------------------------
+
+local CELL = 4
+local GRID_W = math.ceil((MAX_X - MIN_X) / CELL)
+local GRID_H = math.ceil((MAX_Z - MIN_Z) / CELL)
+local FREE, VERGE, ROAD, WATER, SITE, BANK, RAISED, RAIL = 0, 1, 2, 3, 4, 5, 6, 7
+local grid = buffer.create(GRID_W * GRID_H)
+
+local function cellAt(x: number, z: number): number
+	local i = math.floor((x - MIN_X) / CELL)
+	local j = math.floor((z - MIN_Z) / CELL)
+	if i < 0 or j < 0 or i >= GRID_W or j >= GRID_H then
+		return SITE -- off the map counts as taken
+	end
+	return buffer.readu8(grid, j * GRID_W + i)
+end
+
+-- Writes `value` into every square inside a convex shape (flat corners in order). `rule` decides whether to
+-- overwrite what's there: "always", "free" (only empty squares) or "notRoad".
+local function fill(corners: { Vector3 }, value: number, rule: string)
+	local minZ, maxZ = math.huge, -math.huge
+	for _, c in corners do
+		minZ = math.min(minZ, c.Z)
+		maxZ = math.max(maxZ, c.Z)
+	end
+	local j0 = math.max(0, math.floor((minZ - MIN_Z) / CELL))
+	local j1 = math.min(GRID_H - 1, math.floor((maxZ - MIN_Z) / CELL))
+	for j = j0, j1 do
+		local z = MIN_Z + (j + 0.5) * CELL
+		local x0, x1 = math.huge, -math.huge
+		for k = 1, #corners do
+			local a, b = corners[k], corners[k % #corners + 1]
+			if (a.Z <= z and b.Z >= z) or (b.Z <= z and a.Z >= z) then
+				if math.abs(b.Z - a.Z) < 1e-6 then
+					x0 = math.min(x0, a.X, b.X)
+					x1 = math.max(x1, a.X, b.X)
+				else
+					local x = a.X + (b.X - a.X) * (z - a.Z) / (b.Z - a.Z)
+					x0 = math.min(x0, x)
+					x1 = math.max(x1, x)
+				end
+			end
+		end
+		if x0 <= x1 then
+			local i0 = math.max(0, math.floor((x0 - MIN_X) / CELL + 0.5))
+			local i1 = math.min(GRID_W - 1, math.floor((x1 - MIN_X) / CELL - 0.5))
+			for i = i0, i1 do
+				local index = j * GRID_W + i
+				local current = buffer.readu8(grid, index)
+				if rule == "always" or (rule == "free" and current == FREE) or (rule == "notRoad" and current ~= ROAD) then
+					buffer.writeu8(grid, index, value)
+				end
+			end
+		end
+	end
+end
+
+local function circle(centre: Vector3, radius: number): { Vector3 }
+	local out = {}
+	for k = 0, 15 do
+		local angle = k / 16 * 2 * math.pi
+		table.insert(out, centre + Vector3.new(math.cos(angle) * radius, 0, math.sin(angle) * radius))
+	end
+	return out
+end
+
+local function rectangle(x0: number, z0: number, x1: number, z1: number): { Vector3 }
+	return { Vector3.new(x0, 0, z0), Vector3.new(x1, 0, z0), Vector3.new(x1, 0, z1), Vector3.new(x0, 0, z1) }
+end
+
+-- The corners of a building's footprint, with its front edge's middle at `front`, facing `facing`
+local function footprint(front: Vector3, facing: Vector3, width: number, depth: number): { Vector3 }
+	local across = Vector3.new(-facing.Z, 0, facing.X)
+	local back = -facing * depth
+	return {
+		front - across * width / 2, front + across * width / 2,
+		front + across * width / 2 + back, front - across * width / 2 + back,
+	}
+end
+
+-- Height of the ground: the riverbed in the river, otherwise flat
+local function groundAt(x: number, z: number): number
+	return if cellAt(x, z) == WATER then RIVER_BED else 0
+end
+
+-- Areas and villages ---------------------------------------------------------------------------
+
+local function inPolygon(x: number, z: number, corners: { { number } }): boolean
+	local inside = false
+	local n = #corners
+	local j = n
+	for i = 1, n do
+		local xi, zi = corners[i][1], corners[i][2]
+		local xj, zj = corners[j][1], corners[j][2]
+		if (zi > z) ~= (zj > z) and x < (xj - xi) * (z - zi) / (zj - zi) + xi then
+			inside = not inside
+		end
+		j = i
+	end
+	return inside
+end
+
+-- Each area's bounding box, so most areas can be ruled out with four comparisons
+local areaBounds: { { number } } = {}
+for index, area in layout.areas do
+	local x0, z0, x1, z1 = math.huge, math.huge, -math.huge, -math.huge
+	for _, c in area[2] do
+		x0, z0, x1, z1 = math.min(x0, c[1]), math.min(z0, c[2]), math.max(x1, c[1]), math.max(z1, c[2])
+	end
+	areaBounds[index] = { x0, z0, x1, z1 }
+end
+
+-- The kind of town area at a spot ("colleges", "oldcity", "suburb", ...), or nil outside the town
+local function areaAt(x: number, z: number): string?
+	for index, area in layout.areas do
+		local b = areaBounds[index]
+		if x >= b[1] and x <= b[3] and z >= b[2] and z <= b[4] and inPolygon(x, z, area[2]) then
+			return area[1]
+		end
+	end
+	return nil
+end
+
+-- Like areaAt, but "village" in a village. Villages only change what's built along the roads: behind the houses
+-- and their gardens it's fields, hedges and woods like the rest of the countryside.
+local function zoneAt(x: number, z: number): string?
+	local area = areaAt(x, z)
+	if area then
+		return area
+	end
+	for _, v in layout.villages do
+		local dx, dz = x - v[2], z - v[3]
+		if dx * dx + dz * dz < v[4] * v[4] then
+			return "village"
+		end
+	end
+	return nil
+end
+
+-- The river ----------------------------------------------------------------------------------
+
+type Bank = { points: { Vector3 }, dists: { number }, outward: { Vector3 } }
+
+local riverPath: RoadKit.Path
+local banks: { [number]: Bank } = {}
+local BANK_STRIP = 40 -- how far from the water the grass laid along each bank takes over from the fields
+
+local function buildRiver()
+	local controls = {}
+	for _, p in layout.river.points do
+		table.insert(controls, Vector3.new(p[1], 0, p[2]))
+	end
+	riverPath = RoadKit.path(controls, layout.river.radius)
+	local half = layout.river.width / 2
+	local points, normals = riverPath.points, riverPath.normals
+
+	-- Mark the water, so nothing gets built in it and bridges know to stand on piers, and the bank strips
+	for k = 2, #points do
+		local a, b = points[k - 1], points[k]
+		local na, nb = normals[k - 1], normals[k]
+		fill({ a + na * (half + BANK_STRIP), b + nb * (half + BANK_STRIP), b - nb * (half + BANK_STRIP), a - na * (half + BANK_STRIP) }, BANK, "always")
+	end
+	for k = 2, #points do
+		local a, b = points[k - 1], points[k]
+		fill({ a + normals[k - 1] * half, b + normals[k] * half, b - normals[k] * half, a - normals[k - 1] * half }, WATER, "always")
+	end
+
+	-- The water itself, and a muddy bed. The Cam is a slow, murky green-grey river, not a blue sea.
+	local terrain = Workspace.Terrain
+	terrain.WaterColor = Color3.fromRGB(64, 86, 78)
+	terrain.WaterTransparency = 0.35
+	terrain.WaterReflectance = 0.6
+	terrain.WaterWaveSize = 0.04
+	terrain.WaterWaveSpeed = 4
+	for k = 2, #points do
+		local a, b = points[k - 1], points[k]
+		local middle = (a + b) / 2
+		local length = (b - a).Magnitude
+		local frame = CFrame.lookAt(middle, middle + (b - a))
+		terrain:FillBlock(frame * CFrame.new(0, (RIVER_BED + WATER_TOP) / 2, 0), Vector3.new(half * 2 + 6, WATER_TOP - RIVER_BED, length + 6), Enum.Material.Water)
+	end
+	local bed = RoadKit.strip(RoadKit.offset(points, normals, 0, RIVER_BED), normals, -half - 3, half + 3, { colour = Color3.fromRGB(70, 62, 50), material = Enum.Material.Mud, thickness = 3 })
+	for _, part in bed do
+		part.CanQuery = false
+	end
+
+	-- The two banks
+	for _, side in { 1, -1 } do
+		local bankPoints = RoadKit.offset(points, normals, side * half)
+		local dists = { 0 }
+		for k = 2, #bankPoints do
+			dists[k] = dists[k - 1] + (bankPoints[k] - bankPoints[k - 1]).Magnitude
+		end
+		local outward = {}
+		for k, n in normals do
+			outward[k] = n * side
+		end
+		banks[side] = { points = bankPoints, dists = dists, outward = outward }
+	end
+end
+
+-- Where roads and the railway cross a bank, as distances along it, so the bank edges stop for bridges
+local function bridgeGaps(bank: Bank, crossings: { { Vector3 } }, widths: { number }): { { number } }
+	local gaps = {}
+	for index, points in crossings do
+		for k = 2, #points do
+			local p, q = points[k - 1], points[k]
+			for m = 2, #bank.points do
+				local a, b = bank.points[m - 1], bank.points[m]
+				local d1 = q - p
+				local d2 = b - a
+				local den = d1.X * d2.Z - d1.Z * d2.X
+				if math.abs(den) > 1e-6 then
+					local t = ((a.X - p.X) * d2.Z - (a.Z - p.Z) * d2.X) / den
+					local u = ((a.X - p.X) * d1.Z - (a.Z - p.Z) * d1.X) / den
+					if t >= 0 and t <= 1 and u >= 0 and u <= 1 then
+						local along = bank.dists[m - 1] + u * (bank.dists[m] - bank.dists[m - 1])
+						local sine = math.abs(Vector3.new(d1.X, 0, d1.Z).Unit:Cross(Vector3.new(d2.X, 0, d2.Z).Unit).Y)
+						local half = widths[index] / math.max(sine, 0.3) + 4
+						table.insert(gaps, { along - half, along + half })
+					end
+				end
+			end
+		end
+	end
+	return gaps
+end
+
+local function inGaps(s: number, gaps: { { number } }): boolean
+	for _, gap in gaps do
+		if s > gap[1] and s < gap[2] then
+			return true
+		end
+	end
+	return false
+end
+
+local railPath: RoadKit.Path?
+
+-- The edges of the banks: dressed stone through the old city and the colleges, an earthy bank elsewhere
+local function buildBanks(roads: { RoadNetwork.Road })
+	local crossings: { { Vector3 } } = {}
+	local widths: { number } = {}
+	for _, road in roads do
+		table.insert(crossings, road.path.points)
+		table.insert(widths, road.hw + KERB_WIDTH + (if road.side == "pavement" then road.sideWidth else 0))
+	end
+	if railPath then
+		table.insert(crossings, railPath.points)
+		table.insert(widths, 12)
+	end
+	for _, side in { 1, -1 } do
+		local bank = banks[side]
+		local gaps = bridgeGaps(bank, crossings, widths)
+		-- Walk the bank in short steps, making one piece of edge per run of the same kind
+		local run: { Vector3 } = {}
+		local runStone = false
+		local function flush()
+			if #run >= 2 then
+				if runStone then
+					RoadKit.wall(run, RIVER_BED - 1, 0.8, 2, C.Stone, Enum.Material.Limestone)
+				else
+					RoadKit.wall(run, RIVER_BED - 1, -0.05, 2.5, Color3.fromRGB(96, 80, 58), Enum.Material.Ground)
+				end
+			end
+			run = {}
+		end
+		for k = 1, #bank.points do
+			local p = bank.points[k]
+			if inGaps(bank.dists[k], gaps) or p.X < MIN_X or p.X > MAX_X or p.Z < MIN_Z or p.Z > MAX_Z then
+				flush()
+				continue
+			end
+			local zone = zoneAt(p.X, p.Z)
+			local stone = zone == "colleges" or zone == "backs" or zone == "oldcity"
+			if #run > 0 and stone ~= runStone then
+				flush()
+			end
+			runStone = stone
+			table.insert(run, p)
+		end
+		flush()
+	end
+end
+
+-- The ground: patchwork fields in the country, grass in town ------------------------------------
+
+type Crop = { colour: Color3, material: Enum.Material, weight: number, wood: boolean? }
+local CROPS: { Crop } = {
+	{ colour = Color3.fromRGB(92, 132, 62), material = Enum.Material.Grass, weight = 30 }, -- pasture
+	{ colour = Color3.fromRGB(106, 142, 70), material = Enum.Material.Grass, weight = 20 }, -- pasture
+	{ colour = Color3.fromRGB(182, 166, 92), material = Enum.Material.Grass, weight = 15 }, -- ripe wheat
+	{ colour = Color3.fromRGB(152, 156, 86), material = Enum.Material.Grass, weight = 10 }, -- barley
+	{ colour = Color3.fromRGB(110, 88, 64), material = Enum.Material.Ground, weight = 11 }, -- ploughed
+	{ colour = Color3.fromRGB(212, 196, 58), material = Enum.Material.Grass, weight = 4 }, -- rapeseed
+	{ colour = Color3.fromRGB(122, 150, 76), material = Enum.Material.LeafyGrass, weight = 6 }, -- meadow
+	{ colour = Color3.fromRGB(64, 92, 46), material = Enum.Material.LeafyGrass, weight = 4, wood = true }, -- wood
+}
+local TOWN_GRASS = Color3.fromRGB(88, 132, 62)
+local FIELD_W, FIELD_H = 520, 440 -- the fields' size (FIELD_H a whole number of ground rows, so edges line up)
+local GROUND_ROW = 40
+
+local function hash(a: number, b: number): number
+	local h = math.sin(a * 127.1 + b * 311.7) * 43758.5453
+	return h - math.floor(h)
+end
+
+-- Which field a spot is in: fields are laid out in rows, each row shifted along a bit so they don't line up
+local function fieldOf(x: number, z: number): (number, number)
+	local row = math.floor((z - MIN_Z) / FIELD_H)
+	local shift = hash(row, 7) * FIELD_W
+	local column = math.floor((x - MIN_X + shift) / FIELD_W)
+	return row, column
+end
+
+local function cropOf(row: number, column: number): number
+	local total = 0
+	for _, crop in CROPS do
+		total += crop.weight
+	end
+	local roll = hash(row, column) * total
+	for index, crop in CROPS do
+		roll -= crop.weight
+		if roll <= 0 then
+			return index
+		end
+	end
+	return 1
+end
+
+-- What the ground is at a spot: 0 nothing (river and its banks have their own), 1 town grass, 2+ a crop
+local function groundKind(x: number, z: number): number
+	local cell = cellAt(x, z)
+	if cell == WATER or cell == BANK then
+		return 0
+	end
+	if areaAt(x, z) then
+		return 1
+	end
+	for _, site in layout.sites do
+		if x >= site[2] and x <= site[4] and z >= site[3] and z <= site[5] then
+			return 1
+		end
+	end
+	local row, column = fieldOf(x, z)
+	return 1 + cropOf(row, column)
+end
+
+local function buildGround()
+	-- The ground is always loaded on every player's device: its strips are long, and with streaming Roblox
+	-- left out the ones whose middle was far away, so you could see under the map
+	groundModel = Instance.new("Model")
+	groundModel.Name = "Ground"
+	groundModel.ModelStreamingMode = Enum.ModelStreamingMode.Persistent
+	groundModel.Parent = folder
+	TownKit.setParent(groundModel)
+
+	-- Grass along both banks of the river, following it exactly (water meadows out in the country)
+	local half = layout.river.width / 2
+	local points, normals = riverPath.points, riverPath.normals
+	local grass = { colour = Color3.fromRGB(96, 138, 64), material = Enum.Material.Grass, thickness = 4 }
+	local flat = RoadKit.offset(points, normals, 0, 0)
+	RoadKit.strip(flat, normals, half, half + BANK_STRIP + 60, grass)
+	RoadKit.strip(flat, normals, -half - BANK_STRIP - 60, -half, grass)
+
+	-- Everywhere else, in rows; each row is cut into runs wherever the field changes
+	local function lay(from: number, to: number, z: number, kind: number)
+		local colour, material = TOWN_GRASS, Enum.Material.Grass
+		if kind >= 2 then
+			local crop = CROPS[kind - 1]
+			colour, material = crop.colour, crop.material
+		end
+		while from < to - 0.01 do
+			local width = math.min(to - from, 2000)
+			box(Vector3.new(width, 4, GROUND_ROW), CFrame.new(from + width / 2, -2.05, z + GROUND_ROW / 2), colour, material)
+			from += width
+		end
+	end
+	local step = 20
+	for z = MIN_Z, MAX_Z - 1, GROUND_ROW do
+		local runStart: number? = nil
+		local runKind = -1
+		local x = MIN_X
+		while x < MAX_X do
+			-- A spot near the middle of the row: rows are 40 tall, and fields change on row lines
+			local kind = groundKind(x + step / 2, z + GROUND_ROW / 2)
+			-- Leave out the bit by the river if any corner of this piece is in the water
+			if kind ~= 0 then
+				for _, dz in { 2, GROUND_ROW - 2 } do
+					local corner = cellAt(x + step / 2, z + dz)
+					if corner == WATER then
+						kind = 0
+					end
+				end
+			end
+			if kind ~= runKind then
+				if runStart and runKind ~= 0 then
+					lay(runStart, x, z, runKind)
+				end
+				runStart = x
+				runKind = kind
+			end
+			x += step
+		end
+		if runStart and runKind ~= 0 then
+			lay(runStart, MAX_X, z, runKind)
+		end
+	end
+	TownKit.setParent(folder)
+end
+
+-- Roads into the grid -------------------------------------------------------------------------
+
+local function markRoads(result: RoadNetwork.Result)
+	-- Raised roads first, then ground-level roads over the top of them, then pavements and verges round both
+	for pass = 1, 3 do
+		for _, road in result.roads do
+			local path = road.path
+			local outer = road.hw + KERB_WIDTH + road.sideWidth + 2
+			for k = 2, #path.points do
+				local a, b = path.points[k - 1], path.points[k]
+				local na, nb = path.normals[k - 1], path.normals[k]
+				local high = (a.Y + b.Y) / 2 - ROAD_TOP > 1.5
+				if pass == 1 and high then
+					fill({ a + na * road.hw, b + nb * road.hw, b - nb * road.hw, a - na * road.hw }, RAISED, "notRoad")
+				elseif pass == 2 and not high then
+					fill({ a + na * road.hw, b + nb * road.hw, b - nb * road.hw, a - na * road.hw }, ROAD, "always")
+				elseif pass == 3 then
+					fill({ a + na * outer, b + nb * outer, b - nb * outer, a - na * outer }, VERGE, "free")
+				end
+			end
+		end
+	end
+	for _, node in result.nodes do
+		if node.reach > 0 then
+			fill(circle(node.pos, node.reach), if node.pos.Y - ROAD_TOP > 1.5 then RAISED else ROAD, "notRoad")
+			fill(circle(node.pos, node.reach + 14), VERGE, "free")
+		end
+	end
+end
+
+-- Hedgerows ---------------------------------------------------------------------------------------
+
+local HEDGES = { Color3.fromRGB(58, 92, 42), Color3.fromRGB(66, 100, 46), Color3.fromRGB(52, 84, 40), Color3.fromRGB(72, 104, 50) }
+
+-- A hedgerow from a to b, in pieces 20 to 45 studs long that each have their own height, thickness and shade of
+-- green, so the top is ragged like a real one rather than one long box
+local function hedge(a: Vector3, b: Vector3, height: number?)
+	local length = (b - a).Magnitude
+	if length < 2 then
+		return
+	end
+	local direction = (b - a) / length
+	local base = height or 5
+	local s = 0
+	while s < length - 0.5 do
+		local piece = math.min(length - s, random:NextNumber(20, 45))
+		if length - s - piece < 8 then
+			piece = length - s
+		end
+		local h = base + random:NextNumber(-0.8, 1.8)
+		local mid = a + direction * (s + piece / 2) + Vector3.new(0, h / 2, 0)
+		box(Vector3.new(random:NextNumber(3, 4.2), h, piece + 1), CFrame.lookAt(mid, mid + direction), HEDGES[random:NextInteger(1, #HEDGES)], Enum.Material.LeafyGrass)
+		s += piece
+	end
+end
+
+-- Whether a tree at a spot is well clear of every road (so woods and hedgerow trees don't crowd the roads and
+-- slip roads)
+local function clearOfRoads(x: number, z: number, reach: number): boolean
+	for _, offset in { { 0, 0 }, { reach, 0 }, { -reach, 0 }, { 0, reach }, { 0, -reach } } do
+		local cell = cellAt(x + offset[1], z + offset[2])
+		if cell == ROAD or cell == RAISED or cell == VERGE then
+			return false
+		end
+	end
+	return true
+end
+
+-- Whether a spot is open countryside (not town, not a road or its verge, not the river)
+local function isCountry(x: number, z: number): boolean
+	local cell = cellAt(x, z)
+	return cell == FREE and areaAt(x, z) == nil
+end
+
+local function buildFieldHedges()
+	-- Along every field edge: the row lines (east-west) and each row's own column lines (north-south)
+	local trees = 0
+	local function hedgeLine(from: Vector3, to: Vector3)
+		local length = (to - from).Magnitude
+		local direction = (to - from).Unit
+		local s = 0
+		local runStart: number? = nil
+		local nextTree = random:NextNumber(30, 120)
+		while s <= length do
+			local p = from + direction * s
+			local ok = isCountry(p.X, p.Z)
+			if ok and not runStart then
+				runStart = s
+			elseif not ok and runStart then
+				hedge(from + direction * runStart, from + direction * (s - 6))
+				runStart = nil
+			end
+			if ok and s >= nextTree then
+				if random:NextNumber() < 0.6 and clearOfRoads(p.X, p.Z, 12) then
+					TownProps.tree(Vector3.new(p.X, 0, p.Z), random:NextNumber(1.1, 1.7), if random:NextNumber() < 0.3 then "wide" else nil)
+					trees += 1
+				end
+				nextTree = s + random:NextNumber(50, 150)
+			end
+			s += 10
+		end
+		if runStart and length - runStart > 6 then
+			hedge(from + direction * runStart, to)
+		end
+	end
+	local rows = math.ceil((MAX_Z - MIN_Z) / FIELD_H)
+	for row = 0, rows - 1 do
+		local z0 = MIN_Z + row * FIELD_H
+		local z1 = z0 + FIELD_H
+		-- The row's top edge (shared with the row above)
+		if row > 0 then
+			hedgeLine(Vector3.new(MIN_X, 0, z0), Vector3.new(MAX_X, 0, z0))
+		end
+		-- The column edges in this row
+		local shift = hash(row, 7) * FIELD_W
+		local x = MIN_X - shift + FIELD_W
+		while x < MAX_X do
+			-- Skip edges between two pieces of the same wood
+			local left = cropOf(row, math.floor((x - 1 - MIN_X + shift) / FIELD_W))
+			local right = cropOf(row, math.floor((x + 1 - MIN_X + shift) / FIELD_W))
+			if not (CROPS[left].wood and CROPS[right].wood) then
+				hedgeLine(Vector3.new(x, 0, z0 + 2), Vector3.new(x, 0, z1 - 2))
+			end
+			x += FIELD_W
+		end
+	end
+	return trees
+end
+
+-- Woods: trees all over the fields marked as woodland
+local function buildWoods(): number
+	local trees = 0
+	local spacing = 40
+	for z = MIN_Z + spacing / 2, MAX_Z, spacing do
+		for x = MIN_X + spacing / 2, MAX_X, spacing do
+			local px = x + random:NextNumber(-14, 14)
+			local pz = z + random:NextNumber(-14, 14)
+			if not isCountry(px, pz) or not clearOfRoads(px, pz, 16) then
+				continue
+			end
+			local row, column = fieldOf(px, pz)
+			if CROPS[cropOf(row, column)].wood then
+				local roll = random:NextNumber()
+				if roll < 0.82 then
+					TownProps.tree(Vector3.new(px, 0, pz), random:NextNumber(1.1, 1.8), if roll < 0.35 then "tall" else nil)
+				else
+					TownProps.bush(Vector3.new(px, 0, pz), random:NextNumber(1, 1.6))
+				end
+				trees += 1
+			end
+		end
+	end
+	return trees
+end
+
+-- Hedges along the country roads, just outside the verge, with a tree now and then
+local function buildRoadsideHedges(result: RoadNetwork.Result)
+	for _, road in result.roads do
+		if road.kind ~= "lane" and road.kind ~= "aroad" and road.kind ~= "link" then
+			continue
+		end
+		local path = road.path
+		for _, side in { 1, -1 } do
+			local from, to = road.sideFrom[side] or road.startTrim, road.sideTo[side] or (path.length - road.endTrim)
+			from += 12
+			to -= 12
+			local offset = side * (road.hw + road.sideWidth + 2)
+			local runStart: Vector3? = nil
+			local last: Vector3? = nil
+			local lastDirection: Vector3? = nil
+			local s = from
+			while s <= to do
+				local p, direction, n = RoadKit.at(path, s)
+				local at = Vector3.new(p.X, 0, p.Z) + n * offset
+				local onGround = math.abs(p.Y - ROAD_TOP) < 1
+				local ok = onGround and zoneAt(at.X, at.Z) == nil and cellAt(at.X, at.Z) ~= ROAD and cellAt(at.X, at.Z) ~= WATER
+				if ok then
+					if not runStart then
+						runStart = at
+					elseif lastDirection and direction:Dot(lastDirection) < math.cos(math.rad(3)) then
+						-- Bending: finish this straight piece and start the next from here
+						hedge(runStart, last :: Vector3)
+						runStart = last
+					end
+					if random:NextNumber() < 0.025 then
+						TownProps.tree(at + n * side * 1.5, random:NextNumber(1, 1.5))
+					end
+				elseif runStart and last then
+					hedge(runStart, last)
+					runStart = nil
+				end
+				last = at
+				lastDirection = if ok and (not lastDirection or direction:Dot(lastDirection) < math.cos(math.rad(3))) then direction else lastDirection
+				s += 10
+			end
+			if runStart and last then
+				hedge(runStart, last)
+			end
+		end
+	end
+end
+
+-- The railway ------------------------------------------------------------------------------------
+
+local BALLAST = { colour = Color3.fromRGB(122, 114, 104), material = Enum.Material.Pebble, thickness = 2 }
+local SLEEPERS = { colour = Color3.fromRGB(78, 64, 52), material = Enum.Material.WoodPlanks, thickness = 0.3, collide = false }
+local RAIL_COLOUR = Color3.fromRGB(150, 146, 140)
+local TRACKS = { -4.2, 4.2 } -- two tracks, either side of the middle
+local GAUGE = 2.6 -- half the distance between the rails
+
+local function buildRailway()
+	local controls = {}
+	for _, p in layout.railway.points do
+		table.insert(controls, Vector3.new(p[1], 0, p[2]))
+	end
+	local path = RoadKit.path(controls, 900)
+	railPath = path
+	-- Where the railway crosses a road at ground level, it's flush with the road: no ballast there
+	local s = 0
+	local pieces: { { number } } = {}
+	local current: { number }? = nil
+	while s <= path.length do
+		local p = RoadKit.at(path, s)
+		local onRoad = cellAt(p.X, p.Z) == ROAD
+		if not onRoad and not current then
+			local piece = { s, s }
+			current = piece
+			table.insert(pieces, piece)
+		elseif onRoad then
+			current = nil
+		end
+		if current then
+			current[2] = s
+		end
+		s += 4
+	end
+	for _, piece in pieces do
+		if piece[2] - piece[1] < 4 then
+			continue
+		end
+		local points, normals = RoadKit.slice(path, piece[1], piece[2])
+		local lifted = RoadKit.offset(points, normals, 0, 0.6)
+		for _, part in RoadKit.strip(lifted, normals, -9, 9, BALLAST) do
+			part.CanQuery = false
+		end
+		for _, track in TRACKS do
+			RoadKit.strip(RoadKit.offset(points, normals, 0, 0.9), normals, track - 3.6, track + 3.6, SLEEPERS)
+			for _, rail in { -GAUGE, GAUGE } do
+				local railPoints = RoadKit.offset(points, normals, track + rail, 1.25)
+				for k = 2, #railPoints do
+					local a, b = railPoints[k - 1], railPoints[k]
+					local length = (b - a).Magnitude
+					if length > 0.1 then
+						local mid = (a + b) / 2
+						local part = TownKit.detail(Vector3.new(0.35, 0.45, length + 0.2), CFrame.lookAt(mid, mid + (b - a)), RAIL_COLOUR, Enum.Material.Metal)
+						part.CastShadow = false
+					end
+				end
+			end
+		end
+	end
+	-- Keep buildings and fields' hedges off it
+	for k = 2, #path.points do
+		local a, b = path.points[k - 1], path.points[k]
+		local na, nb = path.normals[k - 1], path.normals[k]
+		fill({ a + na * 14, b + nb * 14, b - nb * 14, a - na * 14 }, RAIL, "free")
+	end
+	-- Over the river: two steel girders either side
+	for k = 2, #path.points do
+		local a, b = path.points[k - 1], path.points[k]
+		local mid = (a + b) / 2
+		if cellAt(mid.X, mid.Z) == WATER then
+			local along = (b - a)
+			local n = path.normals[k]
+			for _, side in { 1, -1 } do
+				local at = mid + n * side * 10 + Vector3.new(0, 2.5, 0)
+				box(Vector3.new(1.5, 5, along.Magnitude + 2), CFrame.lookAt(at, at + along), Color3.fromRGB(70, 88, 96), Enum.Material.Metal)
+			end
+			box(Vector3.new(20, 2, along.Magnitude + 2), CFrame.lookAt(mid - Vector3.new(0, 0.6, 0), mid - Vector3.new(0, 0.6, 0) + along), Color3.fromRGB(70, 88, 96), Enum.Material.Metal)
+		end
+	end
+	-- Level crossings: barriers raised either side, with warning lights, and the rails set into the road
+	for _, crossing in layout.railway.crossings do
+		local at = Vector3.new(crossing[1], 0, crossing[2])
+		-- The nearest spot on the railway
+		local s0 = 0
+		local best = math.huge
+		local probe = 0
+		while probe <= path.length do
+			local p = RoadKit.at(path, probe)
+			local d = (Vector3.new(p.X, 0, p.Z) - at).Magnitude
+			if d < best then
+				best, s0 = d, probe
+			end
+			probe += 4
+		end
+		local p, direction, n = RoadKit.at(path, s0)
+		local centre = Vector3.new(p.X, 0, p.Z)
+		for _, track in TRACKS do
+			for _, rail in { -GAUGE, GAUGE } do
+				local railAt = centre + n * (track + rail) + Vector3.new(0, ROAD_TOP + 0.05, 0)
+				local part = TownKit.detail(Vector3.new(0.35, 0.1, 48), CFrame.lookAt(railAt, railAt + direction), RAIL_COLOUR, Enum.Material.Metal)
+				part.CastShadow = false
+			end
+		end
+		for _, side in { 1, -1 } do
+			for _, along in { 1, -1 } do
+				local post = centre + n * side * 13 + direction * along * 18
+				local base = Vector3.new(post.X, 0, post.Z)
+				TownKit.post(0.6, 9, base, Color3.fromRGB(235, 235, 235), Enum.Material.Metal)
+				-- The barrier arm, raised up
+				local arm = TownKit.detail(Vector3.new(0.5, 16, 0.5), CFrame.new(base + Vector3.new(0, 9 + 8, 0)), Color3.fromRGB(240, 240, 240), Enum.Material.SmoothPlastic)
+				arm.CastShadow = false
+				for k = 0, 3 do
+					local band = TownKit.detail(Vector3.new(0.55, 1.6, 0.55), CFrame.new(base + Vector3.new(0, 10.5 + k * 4, 0)), Color3.fromRGB(200, 20, 30), Enum.Material.SmoothPlastic)
+					band.CastShadow = false
+				end
+				local lights = TownKit.detail(Vector3.new(3.2, 1.2, 0.6), CFrame.lookAt(base + Vector3.new(0, 6, 0), base + Vector3.new(0, 6, 0) - n * side), Color3.fromRGB(20, 20, 20), Enum.Material.Metal)
+				lights.CastShadow = false
+			end
+		end
+	end
+	-- Stations: two long platforms with canopies, and the station building beside them
+	for _, station in layout.railway.stations do
+		local name, sx, sz = station[1], station[2], station[3]
+		local at = Vector3.new(sx, 0, sz)
+		local sBest, best = 0, math.huge
+		local probe = 0
+		while probe <= path.length do
+			local p = RoadKit.at(path, probe)
+			local d = (Vector3.new(p.X, 0, p.Z) - at).Magnitude
+			if d < best then
+				best, sBest = d, probe
+			end
+			probe += 4
+		end
+		local p, direction, n = RoadKit.at(path, sBest)
+		local centre = Vector3.new(p.X, 0, p.Z)
+		for _, side in { 1, -1 } do
+			local platform = centre + n * side * 16
+			box(Vector3.new(12, 3.4, 260), CFrame.lookAt(platform + Vector3.new(0, 1.7, 0), platform + Vector3.new(0, 1.7, 0) + direction), Color3.fromRGB(176, 172, 164), Enum.Material.Concrete)
+			local edge = platform - n * side * 5.6 + Vector3.new(0, 3.45, 0)
+			TownKit.detail(Vector3.new(0.8, 0.1, 258), CFrame.lookAt(edge, edge + direction), Color3.fromRGB(240, 210, 40), Enum.Material.SmoothPlastic).CastShadow = false
+			local roof = platform + Vector3.new(0, 14, 0)
+			box(Vector3.new(11, 0.8, 150), CFrame.lookAt(roof, roof + direction), Color3.fromRGB(60, 70, 80), Enum.Material.Metal)
+			for k = -2, 2 do
+				local column = platform + direction * k * 34 + n * side * 2
+				TownKit.post(0.6, 13.6, column + Vector3.new(0, 3.4, 0), Color3.fromRGB(70, 80, 90), Enum.Material.Metal)
+			end
+			fill(rectangle(platform.X - 140, platform.Z - 140, platform.X + 140, platform.Z + 140), SITE, "free")
+		end
+		-- The building on the town side (towards the middle of the map)
+		local townSide = if n:Dot(-centre) > 0 then 1 else -1
+		local front = centre + n * townSide * 48
+		local facing = n * townSide
+		local clear = true
+		for _, corner in footprint(front, facing, 120, 26) do
+			local cell = cellAt(corner.X, corner.Z)
+			if cell == ROAD or cell == RAISED or cell == WATER then
+				clear = false
+			end
+		end
+		if clear then
+			CityBuildings.build(if name == "Cambridge" then "georgian" else "office", CFrame.lookAt(front, front + facing), 120, 26, 2, 11, 0, false)
+		end
+		table.insert(minimap, { "q" :: any, math.round(centre.X), math.round(centre.Z), 40, 260, math.round(math.deg(math.atan2(direction.X, direction.Z))), "yard" })
+	end
+	-- For the minimap
+	for k = 2, #path.points, 2 do
+		local a, b = path.points[k - 1], path.points[math.min(k + 1, #path.points)]
+		table.insert(minimap, { "l" :: any, math.round(a.X), math.round(a.Z), math.round(b.X), math.round(b.Z), 10, "rail" })
+	end
+end
+
+-- Buildings -----------------------------------------------------------------------------------------
+
+-- Buildings from the bought packs: ServerStorage → BuildingKit, made by tools/prepare_building_kit.luau.
+-- Each one's front faces -Z with the middle of its front edge at the origin.
+local kitModels: { [string]: Model } = {}
+local KIT_SIZES: { [string]: { any } } = {
+	-- kind, width, depth (measured in Studio, see tools/london_fill.py)
+	terrace_a = { "terrace", 98.9, 36.8 }, terrace_b = { "terrace", 98.8, 28.0 },
+	semi_a = { "semi", 52.3, 28.2 }, semi_b = { "semi", 52.3, 28.2 }, semi_c = { "semi", 64.1, 41.3 },
+	detached_a = { "detached", 32.6, 30.8 }, detached_b = { "detached", 51.4, 31.0 }, detached_c = { "detached", 24.2, 27.9 },
+	detached_d = { "detached", 26.9, 27.9 }, gosford = { "detached", 17.8, 29.0 }, gosford_double = { "semi", 35.3, 29.0 },
+	mitchell = { "large", 34.9, 32.4 }, windsor = { "large", 34.9, 32.4 }, darwick = { "large", 35.5, 29.3 },
+	morton = { "large", 26.9, 29.0 }, duggen = { "large", 28.8, 32.0 },
+	shop_1 = { "shop", 14.7, 34.2 }, shop_2 = { "shop", 14.7, 34.2 }, shop_3 = { "shop", 14.7, 34.2 }, shop_4 = { "shop", 14.7, 34.2 },
+	shop_5 = { "shopwide", 41.1, 28.0 }, shop_6 = { "shop", 19.4, 36.9 }, shop_7 = { "shopwide", 41.2, 28.1 },
+}
+
+local function loadKit()
+	table.clear(kitModels)
+	local kitFolder = ServerStorage:FindFirstChild("BuildingKit")
+	if not kitFolder then
+		return
+	end
+	for _, model in kitFolder:GetChildren() do
+		if model:IsA("Model") then
+			kitModels[model.Name] = model
+		end
+	end
+end
+
+local function kitOfKind(kinds: { string }): string?
+	local options = {}
+	for name, info in KIT_SIZES do
+		if kitModels[name] and table.find(kinds, info[1]) then
+			table.insert(options, name)
+		end
+	end
+	table.sort(options)
+	if #options == 0 then
+		return nil
+	end
+	return options[random:NextInteger(1, #options)]
+end
+
+-- Stand-ins for far away. With streaming on, each player only has the buildings near them; everything further
+-- off would vanish. So every building also gets one plain block, a little smaller than it and the same colour,
+-- in a model that every player always has. Up close it's hidden inside the real building; far off it's the
+-- skyline.
+local function standIn(cframe: CFrame, size: Vector3, colour: Color3, material: Enum.Material)
+	local part = Instance.new("Part")
+	part.Anchored = true
+	part.CanCollide = false
+	part.CanQuery = false
+	part.CanTouch = false
+	part.CastShadow = false
+	part.Size = Vector3.new(math.max(1, size.X), math.max(1, size.Y), math.max(1, size.Z))
+	part.CFrame = cframe
+	part.Color = colour
+	part.Material = material
+	part.TopSurface = Enum.SurfaceType.Smooth
+	part.BottomSurface = Enum.SurfaceType.Smooth
+	part.Parent = farAway
+end
+
+-- What to build in each area: style (a CityBuildings style, or "kit:<kinds>" for the bought houses), width,
+-- depth and storeys ranges, how far back from the pavement, and the gap to the next building
+type Plan = { style: string, w: { number }, d: { number }, storeys: { number }, back: number, gap: { number } }
+
+local function choosePlan(zone: string, roadKind: string): Plan?
+	local r = random:NextNumber()
+	if zone == "colleges" then
+		return { style = "stone", w = { 60, 100 }, d = { 45, 60 }, storeys = { 3, 4 }, back = 0, gap = { 0, 8 } }
+	elseif zone == "oldcity" or zone == "backs" then
+		if r < 0.42 then
+			return { style = "shops", w = { 22, 34 }, d = { 30, 36 }, storeys = { 3, 3 }, back = 0, gap = { 0, 0 } }
+		elseif r < 0.72 then
+			return { style = "georgian", w = { 26, 42 }, d = { 32, 38 }, storeys = { 3, 4 }, back = 0, gap = { 0, 0 } }
+		elseif r < 0.9 then
+			return { style = "stone", w = { 40, 64 }, d = { 40, 50 }, storeys = { 3, 4 }, back = 0, gap = { 0, 4 } }
+		end
+		return { style = "pub", w = { 22, 28 }, d = { 28, 32 }, storeys = { 2, 3 }, back = 0, gap = { 0, 0 } }
+	elseif zone == "station" then
+		return { style = "office", w = { 60, 90 }, d = { 44, 56 }, storeys = { 5, 7 }, back = 6, gap = { 10, 24 } }
+	elseif zone == "terraces" then
+		if roadKind == "high" or roadKind == "main" then
+			return { style = if r < 0.75 then "shops" else "pub", w = { 18, 26 }, d = { 30, 34 }, storeys = { 2, 3 }, back = 0, gap = { 0, 0 } }
+		end
+		return { style = "kit:terrace", w = { 60, 90 }, d = { 30, 34 }, storeys = { 2, 2 }, back = 3, gap = { 0, 4 } }
+	elseif zone == "suburb" then
+		if roadKind == "high" then
+			return { style = "kit:shop,shopwide", w = { 18, 26 }, d = { 30, 34 }, storeys = { 2, 2 }, back = 0, gap = { 0, 2 } }
+		elseif r < 0.12 then
+			return { style = "victorian", w = { 40, 70 }, d = { 28, 32 }, storeys = { 2, 3 }, back = 6, gap = { 4, 10 } }
+		end
+		return { style = "kit:semi,detached,large", w = { 30, 50 }, d = { 28, 32 }, storeys = { 2, 2 }, back = 14, gap = { 6, 14 } }
+	elseif zone == "village" then
+		if roadKind == "high" and r < 0.35 then
+			return { style = "kit:shop,shopwide", w = { 18, 26 }, d = { 30, 34 }, storeys = { 2, 2 }, back = 0, gap = { 0, 4 } }
+		elseif r < 0.06 then
+			return { style = "pub", w = { 26, 32 }, d = { 28, 32 }, storeys = { 2, 2 }, back = 8, gap = { 10, 20 } }
+		end
+		return { style = "kit:detached,large", w = { 26, 40 }, d = { 28, 32 }, storeys = { 2, 2 }, back = 12, gap = { 14, 30 } }
+	elseif zone == "retail" then
+		return { style = "shed", w = { 110, 160 }, d = { 80, 100 }, storeys = { 1, 1 }, back = 50, gap = { 20, 40 } }
+	elseif zone == "industrial" then
+		return { style = if r < 0.5 then "warehouse" else "shed", w = { 70, 110 }, d = { 60, 80 }, storeys = { 1, 2 }, back = 22, gap = { 14, 30 } }
+	elseif zone == "sciencepark" or zone == "westcam" then
+		return { style = if r < 0.7 then "office" else "concrete", w = { 60, 90 }, d = { 40, 52 }, storeys = { 3, 4 }, back = 30, gap = { 30, 50 } }
+	elseif zone == "hospital" then
+		return { style = if r < 0.5 then "concrete" else "office", w = { 80, 120 }, d = { 50, 70 }, storeys = { 5, 8 }, back = 20, gap = { 20, 40 } }
+	end
+	return nil
+end
+
+-- Checks spots all over the footprint, about every 10 studs. The front row is checked 7 studs in: the strip
+-- just past the pavement is marked as verge, and buildings stand right up against the pavement.
+local function footprintFree(corners: { Vector3 }): boolean
+	local frontLeft, frontRight, backLeft = corners[1], corners[2], corners[4]
+	local across = frontRight - frontLeft
+	local back = backLeft - frontLeft
+	local width, depth = across.Magnitude, back.Magnitude
+	if width < 1 or depth < 1 then
+		return false
+	end
+	local acrossUnit, backUnit = across / width, back / depth
+	local columns = math.max(2, math.ceil(width / 10))
+	local rows = math.max(2, math.ceil(depth / 10))
+	for row = 0, rows do
+		local d = 7 + (depth - 8) * row / rows
+		for column = 0, columns do
+			local w = 1 + (width - 2) * column / columns
+			local p = frontLeft + acrossUnit * w + backUnit * d
+			if cellAt(p.X, p.Z) ~= FREE then
+				return false
+			end
+		end
+	end
+	return true
+end
+
+local buildingCount = 0
+
+local FENCE = Color3.fromRGB(112, 82, 56)
+local GARDEN_WALLS = { Color3.fromRGB(150, 82, 62), Color3.fromRGB(170, 104, 78), Color3.fromRGB(196, 186, 168) }
+
+-- A straight run of fence, wall or hedge from a to b, `height` tall and `thickness` thick
+local function boundary(a: Vector3, b: Vector3, height: number, thickness: number, colour: Color3, material: Enum.Material)
+	local length = (b - a).Magnitude
+	if length < 1 then
+		return
+	end
+	local mid = (a + b) / 2 + Vector3.new(0, height / 2, 0)
+	local part = box(Vector3.new(thickness, height, length), CFrame.lookAt(mid, mid + (b - a)), colour, material)
+	part.CanTouch = false
+end
+
+-- A house's plot. Behind it, a fenced back garden as deep as there's room for. Along the pavement, a low wall or
+-- a clipped hedge, with a gap for the drive when the house is set back far enough (and now and then a car on it).
+-- Call before the house's own ground is marked as taken.
+local function garden(front: Vector3, facing: Vector3, width: number, depth: number, setback: number)
+	local across = Vector3.new(-facing.Z, 0, facing.X)
+	local half = width / 2 + 3
+	local houseBack = front - facing * (depth + 1)
+	local deep = 0
+	for _, try in { 44, 30, 18 } do
+		if footprintFree(footprint(houseBack + facing * 4, facing, width + 6, try + 4)) then
+			deep = try
+			break
+		end
+	end
+	-- Out in the villages the ground is fields, so the plot gets its own lawn
+	if not areaAt(front.X, front.Z) then
+		local frontLine = front + facing * setback
+		local backEdge = houseBack - facing * deep
+		local middle = (frontLine + backEdge) / 2
+		local lawn = box(Vector3.new(width + 6, 0.1, (frontLine - backEdge).Magnitude), CFrame.lookAt(middle, middle + facing), TOWN_GRASS, Enum.Material.Grass)
+		lawn.CastShadow = false
+		lawn.CanTouch = false
+	end
+	if deep > 0 then
+		local backLine = houseBack - facing * deep
+		boundary(backLine - across * half, backLine + across * half, 5.5, 0.4, FENCE, Enum.Material.WoodPlanks)
+		for _, side in { -1, 1 } do
+			boundary(houseBack + across * side * half, backLine + across * side * half, 5.5, 0.4, FENCE, Enum.Material.WoodPlanks)
+		end
+		fill(footprint(houseBack, facing, width + 6, deep), SITE, "free")
+	end
+	if setback < 2 then
+		return
+	end
+	-- The front boundary, just inside the pavement
+	local line = front + facing * (setback - 0.2)
+	local isHedge = random:NextNumber() < 0.4
+	local colour = if isHedge then HEDGES[random:NextInteger(1, #HEDGES)] else GARDEN_WALLS[random:NextInteger(1, #GARDEN_WALLS)]
+	local material = if isHedge then Enum.Material.LeafyGrass else Enum.Material.Brick
+	local height, thickness = if isHedge then 3.4 else 2.2, if isHedge then 2 else 0.8
+	local function frontRun(x0: number, x1: number)
+		if x1 - x0 > 1 then
+			boundary(line + across * x0 - facing * thickness / 2, line + across * x1 - facing * thickness / 2, height, thickness, colour, material)
+		end
+	end
+	if setback >= 10 then
+		local driveSide = if random:NextNumber() < 0.5 then 1 else -1
+		local driveMiddle = driveSide * (width / 2 - 6)
+		frontRun(-half, driveMiddle - 5)
+		frontRun(driveMiddle + 5, half)
+		local drive = front + across * driveMiddle + facing * (setback / 2)
+		local paving = box(Vector3.new(9, 0.12, setback), CFrame.lookAt(drive + Vector3.new(0, 0.01, 0), drive + Vector3.new(0, 0.01, 0) + facing), Color3.fromRGB(128, 124, 118), Enum.Material.Concrete)
+		paving.CastShadow = false
+		if setback >= 13 and random:NextNumber() < 0.45 then
+			local degrees = math.deg(math.atan2(facing.X, facing.Z))
+			table.insert(parkingSpots, { math.round(drive.X * 10) / 10, ROAD_TOP, math.round(drive.Z * 10) / 10, math.round(degrees) })
+		end
+	else
+		frontRun(-half, half)
+	end
+end
+
+local HOUSE_KINDS = { semi = true, detached = true, large = true, terrace = true }
+
+-- Builds one building with the middle of its front edge at `front`, facing `facing` (towards the road).
+-- `setback` (how far it stands back from the pavement) is given for homes that get a garden.
+-- Returns the width it took up, or nil if it didn't fit.
+local function placeBuilding(plan: Plan, front: Vector3, facing: Vector3, setback: number?): number?
+	local frame = CFrame.lookAt(front, front + facing)
+	local kitKinds = string.match(plan.style, "^kit:(.+)$")
+	if kitKinds then
+		local name = kitOfKind(string.split(kitKinds, ","))
+		if name then
+			local size = KIT_SIZES[name]
+			local width, depth = size[2], size[3]
+			local corners = footprint(front, facing, width + 2, depth + 2)
+			if not footprintFree(corners) then
+				return nil
+			end
+			local building = kitModels[name]:Clone()
+			building:PivotTo(frame * CFrame.new(0, 0.05, 0))
+			-- Small pieces (window frames, trims, gutters, plants) are just for looks: out of the physics engine
+			for _, part in building:GetDescendants() do
+				if part:IsA("BasePart") then
+					part.CanTouch = false
+					local s = part.Size
+					if math.min(s.X, s.Y, s.Z) < 1.2 or s.X * s.Y * s.Z < 400 then
+						part.CanCollide = false
+						part.CanQuery = false
+					end
+				end
+			end
+			building.Parent = TownKit.getParent()
+			local cf, bounds = building:GetBoundingBox()
+			standIn(cf * CFrame.new(0, -bounds.Y * 0.2, 0), bounds * Vector3.new(0.84, 0.6, 0.7), Color3.fromRGB(150, 92, 70), Enum.Material.SmoothPlastic)
+			if setback and HOUSE_KINDS[size[1]] then
+				garden(front, facing, width, depth, setback)
+			end
+			fill(corners, SITE, "always")
+			buildingCount += 1
+			return width
+		end
+		-- No kit in this place: part-built houses instead
+		plan = { style = "victorian", w = plan.w, d = plan.d, storeys = plan.storeys, back = plan.back, gap = plan.gap }
+	end
+	local width = random:NextNumber(plan.w[1], plan.w[2])
+	local depth = random:NextNumber(plan.d[1], plan.d[2])
+	local storeys = random:NextInteger(plan.storeys[1], plan.storeys[2])
+	local corners = footprint(front, facing, width, depth)
+	if not footprintFree(corners) then
+		-- Try a narrower one
+		width = plan.w[1]
+		corners = footprint(front, facing, width, depth)
+		if not footprintFree(corners) then
+			return nil
+		end
+	end
+	local model = CityBuildings.build(plan.style, frame, width, depth, storeys, random:NextInteger(1, 1e6), 0, false)
+	if setback and not areaAt(front.X, front.Z) then
+		-- A village pub or shop: grass round it rather than the field
+		local middle = front + facing * setback / 2 - facing * depth / 2
+		local lawn = box(Vector3.new(width + 12, 0.1, depth + setback + 10), CFrame.lookAt(middle, middle + facing), TOWN_GRASS, Enum.Material.Grass)
+		lawn.CastShadow = false
+		lawn.CanTouch = false
+	end
+	local body = model:FindFirstChildWhichIsA("BasePart")
+	if body and body.Size.Y > 6 then
+		standIn(body.CFrame, body.Size - Vector3.new(1.6, 0.8, 1.6), body.Color, body.Material)
+	end
+	fill(corners, SITE, "always")
+	buildingCount += 1
+	return width
+end
+
+-- Lines the streets in town and the villages with buildings, facing the road
+local function buildStreets(result: RoadNetwork.Result)
+	for _, road in result.roads do
+		local kind = road.kind
+		if kind == "motorway" or kind == "dual" or kind == "slip" or kind == "link" then
+			continue
+		end
+		local path = road.path
+		for _, side in { 1, -1 } do
+			local from = (road.sideFrom[side] or road.startTrim) + 6
+			local to = (road.sideTo[side] or (path.length - road.endTrim)) - 6
+			local s = from + random:NextNumber(0, 6)
+			while s < to do
+				local p, _, n = RoadKit.at(path, s)
+				if p.Y - ROAD_TOP > 1 then
+					s += 20
+					continue
+				end
+				local edge = road.hw + (if road.side == "pavement" then KERB_WIDTH + road.sideWidth else road.sideWidth)
+				local probe = Vector3.new(p.X, 0, p.Z) + n * side * (edge + 10)
+				local zone = zoneAt(probe.X, probe.Z)
+				-- Out in the country, only the villages have houses along the roads
+				if not zone or (road.side ~= "pavement" and zone ~= "village") then
+					s += 30
+					continue
+				end
+				local plan = choosePlan(zone, kind)
+				if not plan then
+					s += 30
+					continue
+				end
+				local front = Vector3.new(p.X, 0, p.Z) + n * side * (edge + 0.5 + plan.back)
+				local homes = zone == "suburb" or zone == "village" or zone == "terraces"
+				local width = placeBuilding(plan, front, -n * side, if homes then plan.back else nil)
+				if width then
+					s += width + random:NextNumber(plan.gap[1], plan.gap[2])
+				else
+					s += 8
+				end
+			end
+		end
+	end
+end
+
+-- In the old city, the colleges and round the station the blocks are built up all the way through, so the space
+-- behind the buildings along the streets gets more: college courts, and plain backs of shops and offices
+local INFILL: { [string]: Plan } = {
+	colleges = { style = "stone", w = { 50, 80 }, d = { 40, 60 }, storeys = { 3, 4 }, back = 0, gap = { 0, 0 } },
+	oldcity = { style = "backdrop", w = { 28, 48 }, d = { 26, 40 }, storeys = { 3, 4 }, back = 0, gap = { 0, 0 } },
+	station = { style = "office", w = { 50, 80 }, d = { 40, 50 }, storeys = { 4, 6 }, back = 0, gap = { 0, 0 } },
+}
+local FACINGS = { Vector3.new(0, 0, 1), Vector3.new(0, 0, -1), Vector3.new(1, 0, 0), Vector3.new(-1, 0, 0) }
+
+local function buildInfill()
+	for index, area in layout.areas do
+		local plan = INFILL[area[1]]
+		if not plan then
+			continue
+		end
+		local b = areaBounds[index]
+		for z = b[2] + 10, b[4], 22 do
+			for x = b[1] + 10, b[3], 22 do
+				if cellAt(x, z) == FREE and inPolygon(x, z, area[2]) then
+					placeBuilding(plan, Vector3.new(x, 0, z), FACINGS[random:NextInteger(1, 4)])
+				end
+			end
+		end
+	end
+end
+
+-- Open land left in the suburbs (where no street reaches) becomes the green spaces every British suburb has:
+-- playing fields with goals, allotments with sheds, and little copses, with trees dotted over whatever's left
+local function rectFree(x0: number, z0: number, x1: number, z1: number): boolean
+	for z = z0, z1, 10 do
+		for x = x0, x1, 10 do
+			if cellAt(x, z) ~= FREE then
+				return false
+			end
+		end
+	end
+	return true
+end
+
+local function line(x0: number, z0: number, x1: number, z1: number)
+	local a, b = Vector3.new(x0, 0.06, z0), Vector3.new(x1, 0.06, z1)
+	local mark = TownKit.detail(Vector3.new(0.6, 0.06, (b - a).Magnitude + 0.6), CFrame.lookAt((a + b) / 2, b), C.White, Enum.Material.SmoothPlastic)
+	mark.CastShadow = false
+end
+
+local function playingField(x0: number, z0: number, x1: number, z1: number)
+	local cx, cz = (x0 + x1) / 2, (z0 + z1) / 2
+	local hw, hd = (x1 - x0) / 2 - 20, (z1 - z0) / 2 - 20
+	-- Touchlines, halfway line, centre circle and the two penalty boxes
+	line(cx - hw, cz - hd, cx + hw, cz - hd)
+	line(cx - hw, cz + hd, cx + hw, cz + hd)
+	line(cx - hw, cz - hd, cx - hw, cz + hd)
+	line(cx + hw, cz - hd, cx + hw, cz + hd)
+	line(cx, cz - hd, cx, cz + hd)
+	for k = 0, 11 do
+		local a1, a2 = k / 12 * 2 * math.pi, (k + 1) / 12 * 2 * math.pi
+		line(cx + math.cos(a1) * 18, cz + math.sin(a1) * 18, cx + math.cos(a2) * 18, cz + math.sin(a2) * 18)
+	end
+	for _, side in { -1, 1 } do
+		local goalLine = cx + side * hw
+		local boxEdge = goalLine - side * 32
+		line(boxEdge, cz - 34, boxEdge, cz + 34)
+		line(goalLine, cz - 34, boxEdge, cz - 34)
+		line(goalLine, cz + 34, boxEdge, cz + 34)
+		-- The goal: two posts and a crossbar
+		for _, post in { -8, 8 } do
+			TownKit.post(0.5, 8, Vector3.new(goalLine, 0, cz + post), C.White, Enum.Material.SmoothPlastic)
+		end
+		local bar = TownKit.detail(Vector3.new(0.5, 0.5, 16.5), CFrame.new(goalLine, 8, cz), C.White, Enum.Material.SmoothPlastic)
+		bar.CanCollide = true
+	end
+	-- Trees along one long side
+	for x = x0 + 10, x1 - 10, 26 do
+		if random:NextNumber() < 0.8 then
+			TownProps.tree(Vector3.new(x + random:NextNumber(-4, 4), 0, z1 - 6), random:NextNumber(1.1, 1.6))
+		end
+	end
+end
+
+local SOIL = Color3.fromRGB(96, 74, 54)
+local CROP_GREENS = { Color3.fromRGB(82, 120, 58), Color3.fromRGB(104, 136, 64), Color3.fromRGB(70, 104, 50) }
+
+local function allotments(x0: number, z0: number, x1: number, z1: number)
+	-- Strips of dug earth and rows of vegetables, a shed on every few plots, a wire fence round it all
+	local z = z0 + 8
+	local index = 0
+	while z < z1 - 14 do
+		local x = x0 + 8
+		while x < x1 - 30 do
+			local plot = Vector3.new(x + 13, 0.03, z + 5)
+			local dug = random:NextNumber() < 0.45
+			local part = box(Vector3.new(26, 0.08, 10), CFrame.new(plot), if dug then SOIL else CROP_GREENS[random:NextInteger(1, #CROP_GREENS)], if dug then Enum.Material.Ground else Enum.Material.LeafyGrass)
+			part.CastShadow = false
+			part.CanTouch = false
+			index += 1
+			if index % 5 == 0 then
+				local shed = box(Vector3.new(6, 6.5, 5), CFrame.new(x + 26, 3.25, z + 5), Color3.fromRGB(104, 80, 58), Enum.Material.WoodPlanks)
+				shed.CanTouch = false
+			end
+			x += 32
+		end
+		z += 14
+	end
+	for _, edge in { { x0, z0, x1, z0 }, { x1, z0, x1, z1 }, { x1, z1, x0, z1 }, { x0, z1, x0, z0 } } do
+		boundary(Vector3.new(edge[1], 0, edge[2]), Vector3.new(edge[3], 0, edge[4]), 5, 0.2, Color3.fromRGB(110, 120, 116), Enum.Material.DiamondPlate)
+	end
+end
+
+local function copse(x0: number, z0: number, x1: number, z1: number)
+	for z = z0 + 10, z1 - 10, 22 do
+		for x = x0 + 10, x1 - 10, 22 do
+			local at = Vector3.new(x + random:NextNumber(-8, 8), 0, z + random:NextNumber(-8, 8))
+			if random:NextNumber() < 0.75 then
+				TownProps.tree(at, random:NextNumber(1.1, 1.8), if random:NextNumber() < 0.3 then "tall" else nil)
+			else
+				TownProps.bush(at, random:NextNumber(1, 1.5))
+			end
+		end
+	end
+end
+
+local function buildOpenLand(): number
+	local made = 0
+	for index, area in layout.areas do
+		if area[1] ~= "suburb" and area[1] ~= "terraces" then
+			continue
+		end
+		local b = areaBounds[index]
+		for z = b[2] + 20, b[4] - 160, 60 do
+			for x = b[1] + 20, b[3] - 230, 60 do
+				local roll = random:NextNumber()
+				local w, d = 230, 160
+				if roll >= 0.5 then
+					w, d = 170, 120
+				end
+				local x1, z1 = x + w, z + d
+				if inPolygon(x, z, area[2]) and inPolygon(x1, z1, area[2]) and rectFree(x - 10, z - 10, x1 + 10, z1 + 10) then
+					if roll < 0.5 then
+						playingField(x, z, x1, z1)
+					elseif roll < 0.8 then
+						allotments(x, z, x1, z1)
+					else
+						copse(x, z, x1, z1)
+					end
+					fill(rectangle(x, z, x1, z1), SITE, "free")
+					made += 1
+				end
+			end
+		end
+		-- Trees dotted over the rest
+		for z = b[2] + 20, b[4], 45 do
+			for x = b[1] + 20, b[3], 45 do
+				local at = Vector3.new(x + random:NextNumber(-15, 15), 0, z + random:NextNumber(-15, 15))
+				if random:NextNumber() < 0.3 and inPolygon(at.X, at.Z, area[2]) and clearOfRoads(at.X, at.Z, 14) and cellAt(at.X, at.Z) == FREE then
+					TownProps.tree(at, random:NextNumber(1, 1.6), if random:NextNumber() < 0.3 then "wide" else nil)
+				end
+			end
+		end
+	end
+	return made
+end
+
+-- The bigger sites (hospital, science park, retail park, industrial estate, university) also get buildings
+-- dotted over the space behind the ones along the roads
+local function buildCampuses()
+	for _, area in layout.areas do
+		local zone = area[1]
+		if zone ~= "hospital" and zone ~= "sciencepark" and zone ~= "westcam" and zone ~= "retail" and zone ~= "industrial" then
+			continue
+		end
+		local x0, z0, x1, z1 = math.huge, math.huge, -math.huge, -math.huge
+		for _, c in area[2] do
+			x0, z0, x1, z1 = math.min(x0, c[1]), math.min(z0, c[2]), math.max(x1, c[1]), math.max(z1, c[2])
+		end
+		local spacing = 150
+		for z = z0 + spacing / 2, z1, spacing do
+			for x = x0 + spacing / 2, x1, spacing do
+				local at = Vector3.new(x + random:NextNumber(-20, 20), 0, z + random:NextNumber(-20, 20))
+				if inPolygon(at.X, at.Z, area[2]) then
+					local plan = choosePlan(zone, "town")
+					if plan then
+						local facing = if random:NextNumber() < 0.5 then Vector3.new(0, 0, 1) else Vector3.new(0, 0, -1)
+						placeBuilding(plan, at + facing * 30, facing)
+					end
+				end
+			end
+		end
+	end
+end
+
+-- Parks, landmarks and depots ----------------------------------------------------------------
+
+local function makeDepot(name: string, depots: Folder): Model
+	local depot = Instance.new("Model")
+	depot.Name = name
+	depot.Parent = depots
+	return depot
+end
+
+-- A college chapel like King's: a long, tall stone building with big windows, buttresses and a pinnacle at
+-- each corner, standing on a lawn by the river
+local function chapel(frame: CFrame, length: number, width: number, height: number)
+	local stone = Color3.fromRGB(214, 196, 150)
+	box(Vector3.new(width, height, length), frame * CFrame.new(0, height / 2, 0), stone, Enum.Material.Limestone)
+	-- Roof
+	box(Vector3.new(width - 2, 3, length - 2), frame * CFrame.new(0, height + 1.5, 0), Color3.fromRGB(150, 148, 140), Enum.Material.Slate)
+	-- Tall windows down both sides, between buttresses
+	local bays = math.floor(length / 24)
+	for k = 0, bays - 1 do
+		local z = -length / 2 + (k + 0.5) * length / bays
+		for _, side in { 1, -1 } do
+			local window = TownKit.detail(Vector3.new(0.3, height * 0.68, length / bays * 0.62), frame * CFrame.new(side * (width / 2 + 0.1), height * 0.52, z), Color3.fromRGB(60, 70, 90), Enum.Material.Glass)
+			window.Transparency = 0.1
+			local buttress = box(Vector3.new(4, height * 0.9, 4), frame * CFrame.new(side * (width / 2 + 2), height * 0.45, z + length / bays / 2), stone, Enum.Material.Limestone)
+			buttress.CanCollide = k < bays - 1
+			TownKit.detail(Vector3.new(2, 8, 2), frame * CFrame.new(side * (width / 2 + 2), height + 4, z + length / bays / 2), stone, Enum.Material.Limestone)
+		end
+	end
+	-- The four corner towers with spires
+	for _, sx in { 1, -1 } do
+		for _, sz in { 1, -1 } do
+			local at = frame * CFrame.new(sx * (width / 2 - 1), 0, sz * (length / 2 - 1))
+			box(Vector3.new(8, height + 18, 8), at * CFrame.new(0, (height + 18) / 2, 0), stone, Enum.Material.Limestone)
+			local spire = TownKit.detail(Vector3.new(5, 14, 5), at * CFrame.new(0, height + 25, 0), stone, Enum.Material.Limestone)
+			spire.CanCollide = false
+		end
+	end
+	-- The great east and west windows
+	for _, sz in { 1, -1 } do
+		local window = TownKit.detail(Vector3.new(width * 0.6, height * 0.6, 0.3), frame * CFrame.new(0, height * 0.55, sz * (length / 2 + 0.1)), Color3.fromRGB(60, 70, 90), Enum.Material.Glass)
+		window.Transparency = 0.1
+	end
+end
+
+local function marketStalls(x0: number, z0: number, x1: number, z1: number)
+	box(Vector3.new(x1 - x0, 0.4, z1 - z0), CFrame.new((x0 + x1) / 2, PAVEMENT_TOP - 0.2, (z0 + z1) / 2), Color3.fromRGB(150, 140, 128), Enum.Material.Cobblestone)
+	local colours = { Color3.fromRGB(30, 80, 160), Color3.fromRGB(170, 30, 40), Color3.fromRGB(30, 120, 60), Color3.fromRGB(220, 200, 60), Color3.fromRGB(240, 240, 240) }
+	for x = x0 + 18, x1 - 18, 24 do
+		for z = z0 + 18, z1 - 18, 30 do
+			local base = Vector3.new(x, PAVEMENT_TOP, z)
+			for _, dx in { -5, 5 } do
+				for _, dz in { -6, 6 } do
+					TownKit.post(0.3, 8, base + Vector3.new(dx, 0, dz), Color3.fromRGB(80, 80, 80), Enum.Material.Metal)
+				end
+			end
+			local canopy = box(Vector3.new(12, 0.6, 14), CFrame.new(base + Vector3.new(0, 8.3, 0)), colours[random:NextInteger(1, #colours)], Enum.Material.Fabric)
+			canopy.CanCollide = false
+			box(Vector3.new(10, 3, 4), CFrame.new(base + Vector3.new(0, 1.5, -4)), Color3.fromRGB(120, 90, 60), Enum.Material.WoodPlanks)
+		end
+	end
+end
+
+local function stadium(x0: number, z0: number, x1: number, z1: number)
+	local middle = Vector3.new((x0 + x1) / 2, 0, (z0 + z1) / 2)
+	local w, d = x1 - x0, z1 - z0
+	box(Vector3.new(w - 80, 0.3, d - 80), CFrame.new(middle + Vector3.new(0, 0.15, 0)), Color3.fromRGB(70, 140, 60), Enum.Material.Grass)
+	-- Stands on all four sides, stepped, with a roof
+	local stand = Color3.fromRGB(150, 30, 40)
+	local sides: { { offset: Vector3, length: number, turn: number } } = {
+		{ offset = Vector3.new(0, 0, -(d / 2 - 20)), length = w - 40, turn = 0 },
+		{ offset = Vector3.new(0, 0, d / 2 - 20), length = w - 40, turn = math.pi },
+		{ offset = Vector3.new(-(w / 2 - 20), 0, 0), length = d - 40, turn = math.pi / 2 },
+		{ offset = Vector3.new(w / 2 - 20, 0, 0), length = d - 40, turn = -math.pi / 2 },
+	}
+	for _, info in sides do
+		local at = CFrame.new(middle + info.offset) * CFrame.Angles(0, info.turn, 0)
+		for step = 0, 4 do
+			box(Vector3.new(info.length, 3 + step * 3, 6), at * CFrame.new(0, (3 + step * 3) / 2, step * -6 + 12), if step % 2 == 0 then stand else Color3.fromRGB(240, 240, 240), Enum.Material.Concrete)
+		end
+		box(Vector3.new(info.length, 1, 34), at * CFrame.new(0, 26, 0), Color3.fromRGB(70, 70, 75), Enum.Material.Metal)
+	end
+	for _, sx in { 1, -1 } do
+		for _, sz in { 1, -1 } do
+			TownKit.post(1.2, 60, middle + Vector3.new(sx * (w / 2 - 8), 0, sz * (d / 2 - 8)), Color3.fromRGB(120, 120, 125), Enum.Material.Metal)
+		end
+	end
+	fill(rectangle(x0, z0, x1, z1), SITE, "notRoad")
+end
+
+local function airfield(x0: number, z0: number, x1: number, z1: number)
+	local middle = Vector3.new((x0 + x1) / 2, 0, (z0 + z1) / 2)
+	box(Vector3.new(x1 - x0 - 100, 0.3, 70), CFrame.new(middle + Vector3.new(0, 0.15, 0)) * CFrame.Angles(0, math.rad(-8), 0), Color3.fromRGB(70, 70, 72), Enum.Material.Concrete)
+	local dashes = math.floor((x1 - x0 - 160) / 120)
+	for k = -dashes, dashes do
+		local dash = TownKit.detail(Vector3.new(30, 0.05, 1.2), CFrame.new(middle + Vector3.new(0, 0.33, 0)) * CFrame.Angles(0, math.rad(-8), 0) * CFrame.new(k * 60, 0, 0), C.White, Enum.Material.Concrete)
+		dash.CastShadow = false
+	end
+	-- Hangars and a control tower along the side nearest town
+	for k = 0, 2 do
+		local at = Vector3.new(x0 + 140 + k * 130, 0, z1 - 120)
+		box(Vector3.new(100, 30, 80), CFrame.new(at + Vector3.new(0, 15, 0)), Color3.fromRGB(200, 204, 210), Enum.Material.CorrodedMetal)
+	end
+	local tower = Vector3.new(x0 + 560, 0, z1 - 110)
+	box(Vector3.new(16, 40, 16), CFrame.new(tower + Vector3.new(0, 20, 0)), Color3.fromRGB(230, 230, 230), Enum.Material.Concrete)
+	local cab = box(Vector3.new(22, 9, 22), CFrame.new(tower + Vector3.new(0, 44.5, 0)), Color3.fromRGB(60, 80, 96), Enum.Material.Glass)
+	cab.Transparency = 0.2
+	fill(rectangle(x0, z0, x1, z1), SITE, "notRoad")
+end
+
+-- Lakes (Milton Country Park): flat water in among the grass, with reeds and trees round the edge
+local function lake(x0: number, z0: number, x1: number, z1: number)
+	local middle = Vector3.new((x0 + x1) / 2, 0, (z0 + z1) / 2)
+	local w, d = x1 - x0, z1 - z0
+	local pools: { { offset: Vector3, share: number } } = {
+		{ offset = Vector3.new(-w * 0.16, 0, -d * 0.1), share = 0.62 },
+		{ offset = Vector3.new(w * 0.2, 0, d * 0.12), share = 0.5 },
+	}
+	for _, pool in pools do
+		local centre = middle + pool.offset
+		local size = math.min(w, d) * pool.share
+		local water = box(Vector3.new(0.3, size, size * 1.3), CFrame.new(centre.X, 0.02, centre.Z) * CFrame.Angles(0, math.rad(20), math.pi / 2), C.Water, Enum.Material.Glass)
+		water.Shape = Enum.PartType.Cylinder
+		water.Transparency = 0.1
+		water.Reflectance = 0.25
+		water.CanCollide = false
+		for k = 0, 13 do
+			local angle = k / 14 * 2 * math.pi
+			local edge = centre + CFrame.Angles(0, math.rad(20), 0):VectorToWorldSpace(Vector3.new(math.sin(angle) * size * 0.65 + 6, 0, math.cos(angle) * size * 0.5 + 6))
+			if random:NextNumber() < 0.6 then
+				TownProps.tree(edge, random:NextNumber(1, 1.5), if random:NextNumber() < 0.3 then "wide" else nil)
+			else
+				TownProps.bush(edge, random:NextNumber(1, 1.4))
+			end
+		end
+	end
+	fill(rectangle(x0, z0, x1, z1), SITE, "free")
+end
+
+-- An open common like Parker's Piece or Jesus Green: mown grass with paths across it corner to corner, lined
+-- with trees, trees round the edge and benches. Roads and the river can run through it, so every path piece
+-- and tree is checked against the ground first. `wild` ones (Coe Fen, Sheep's Green) have rough grass, more
+-- trees and bushes, and only one path.
+local PATH = Color3.fromRGB(194, 180, 152)
+
+local function openGround(x: number, z: number): boolean
+	local cell = cellAt(x, z)
+	return cell == FREE or cell == SITE
+end
+
+local function commonPath(a: Vector3, b: Vector3, treeSpacing: number)
+	local length = (b - a).Magnitude
+	local direction = (b - a).Unit
+	local across = Vector3.new(-direction.Z, 0, direction.X)
+	local function lay(from: number, to: number)
+		if to - from > 6 then
+			local mid = a + direction * ((from + to) / 2) + Vector3.new(0, 0.01, 0)
+			TownKit.detail(Vector3.new(7, 0.12, to - from), CFrame.lookAt(mid, mid + direction), PATH, Enum.Material.Sand).CastShadow = false
+		end
+	end
+	local runStart: number? = nil
+	local s = 0
+	while s <= length do
+		local p = a + direction * s
+		local ok = openGround(p.X, p.Z)
+		if ok and not runStart then
+			runStart = s
+		elseif not ok and runStart then
+			lay(runStart, s - 4)
+			runStart = nil
+		end
+		if ok and treeSpacing > 0 and s % treeSpacing < 4 and s > 20 and s < length - 20 then
+			for _, side in { 1, -1 } do
+				local at = p + across * side * 11
+				if openGround(at.X, at.Z) then
+					TownProps.tree(at, random:NextNumber(1.2, 1.6), "tall")
+				end
+			end
+		end
+		s += 4
+	end
+	if runStart then
+		lay(runStart, length)
+	end
+end
+
+local function common(x0: number, z0: number, x1: number, z1: number, wild: boolean)
+	fill(rectangle(x0, z0, x1, z1), SITE, "free")
+	local w, d = x1 - x0, z1 - z0
+	if wild then
+		box(Vector3.new(w, 0.1, d), CFrame.new((x0 + x1) / 2, 0.0, (z0 + z1) / 2), Color3.fromRGB(104, 136, 66), Enum.Material.LeafyGrass).CanCollide = false
+	end
+	-- Paths corner to corner (Parker's Piece's famous crossing), and across the middle on the bigger ones
+	local corners = { Vector3.new(x0 + 6, 0, z0 + 6), Vector3.new(x1 - 6, 0, z0 + 6), Vector3.new(x1 - 6, 0, z1 - 6), Vector3.new(x0 + 6, 0, z1 - 6) }
+	commonPath(corners[1], corners[3], if wild then 0 else 36)
+	if not wild then
+		commonPath(corners[2], corners[4], 36)
+		if w > 500 then
+			commonPath(Vector3.new(x0 + 6, 0, (z0 + z1) / 2), Vector3.new(x1 - 6, 0, (z0 + z1) / 2), 0)
+		end
+		-- A tall lamp where the paths cross
+		local middle = Vector3.new((x0 + x1) / 2, 0, (z0 + z1) / 2)
+		if openGround(middle.X, middle.Z) then
+			TownProps.lampPost(middle + Vector3.new(4, 0, 0), Vector3.new(-1, 0, 0))
+		end
+	end
+	-- Trees round the edge, with gaps
+	local spacing = if wild then 22 else 34
+	for _, edge in { { corners[1], corners[2] }, { corners[2], corners[3] }, { corners[3], corners[4] }, { corners[4], corners[1] } } do
+		local a, b = edge[1], edge[2]
+		local length = (b - a).Magnitude
+		local direction = (b - a).Unit
+		local inward = Vector3.new(-direction.Z, 0, direction.X)
+		local s = 10
+		while s < length - 10 do
+			local at = a + direction * s + inward * random:NextNumber(4, 10)
+			if openGround(at.X, at.Z) and random:NextNumber() < 0.8 then
+				TownProps.tree(at, random:NextNumber(1.2, 1.8), if random:NextNumber() < 0.4 then "wide" else nil)
+			end
+			s += spacing + random:NextNumber(-6, 10)
+		end
+	end
+	-- Scattered trees and bushes across the wild ones, a bench or two on the others
+	if wild then
+		for _ = 1, math.floor(w * d / 3000) do
+			local at = Vector3.new(random:NextNumber(x0 + 10, x1 - 10), 0, random:NextNumber(z0 + 10, z1 - 10))
+			if openGround(at.X, at.Z) then
+				if random:NextNumber() < 0.5 then
+					TownProps.tree(at, random:NextNumber(1, 1.7), if random:NextNumber() < 0.5 then "wide" else nil)
+				else
+					TownProps.bush(at, random:NextNumber(1, 1.6))
+				end
+			end
+		end
+	else
+		for _, f in { 0.3, 0.7 } do
+			local at = corners[1]:Lerp(corners[3], f) + Vector3.new(6, 0, -6)
+			if openGround(at.X, at.Z) then
+				TownProps.bench(at, (corners[3] - corners[1]).Unit:Cross(Vector3.yAxis))
+			end
+		end
+	end
+	table.insert(minimap, { (x0 + x1) / 2 :: any, (z0 + z1) / 2, w, d, "park" })
+end
+
+local function buildSites(depots: Folder)
+	for _, site in layout.sites do
+		local kind, x0, z0, x1, z1 = site[1], site[2], site[3], site[4], site[5]
+		if kind == "parkerspiece" or kind == "jesusgreen" or kind == "midsummer" or kind == "coldhamscommon" then
+			common(x0, z0, x1, z1, false)
+		elseif kind == "coefen" or kind == "sheepsgreen" then
+			common(x0, z0, x1, z1, true)
+		elseif kind == "christspieces" or kind == "botanic" then
+			-- Walled gardens: the hedged park with a pond
+			fill(rectangle(x0, z0, x1, z1), SITE, "notRoad")
+			TownBuildings.park(x0, x1, z0, z1, random)
+			table.insert(minimap, { (x0 + x1) / 2 :: any, (z0 + z1) / 2, x1 - x0, z1 - z0, "park" })
+		elseif kind == "marketsquare" then
+			fill(rectangle(x0, z0, x1, z1), SITE, "notRoad")
+			marketStalls(x0, z0, x1, z1)
+		elseif kind == "kingscollege" then
+			fill(rectangle(x0, z0, x1, z1), SITE, "notRoad")
+			box(Vector3.new(x1 - x0, 0.3, z1 - z0), CFrame.new((x0 + x1) / 2, 0.15, (z0 + z1) / 2), Color3.fromRGB(96, 146, 70), Enum.Material.Grass)
+			local frame = CFrame.new((x0 + x1) / 2 + 40, 0, (z0 + z1) / 2) * CFrame.Angles(0, math.pi / 2, 0)
+			chapel(frame, 260, 56, 78)
+			mapInfo:SetAttribute("Chapel", frame.Position)
+			table.insert(minimap, { (x0 + x1) / 2 :: any, (z0 + z1) / 2, x1 - x0, z1 - z0, "park" })
+		elseif kind == "stadium" then
+			stadium(x0, z0, x1, z1)
+		elseif kind == "airport" then
+			airfield(x0, z0, x1, z1)
+		elseif kind == "lakes" then
+			lake(x0, z0, x1, z1)
+		end
+	end
+
+	-- Sites that face a road: the depots
+	for _, site in layout.frontSites do
+		local front = Vector3.new(site.x, 0, site.z)
+		local facing = Vector3.new(site.fx, 0, site.fz)
+		local frame = CFrame.lookAt(front, front + facing)
+		local across = frame.RightVector
+		local back = -facing * site.depth
+		fill({ front - across * site.width / 2, front + across * site.width / 2, front + across * site.width / 2 + back, front - across * site.width / 2 + back }, SITE, "notRoad")
+		local centre = front + back / 2
+		table.insert(minimap, { "q" :: any, math.round(centre.X), math.round(centre.Z), site.width, site.depth, math.round(math.deg(math.atan2(facing.X, facing.Z))), "yard" })
+		if site.kind == "petrol" then
+			TownBuildings.petrolStation(frame, site.width, site.depth, makeDepot("Car", depots))
+		elseif site.kind == "busgarage" then
+			TownBuildings.busGarage(frame, site.width, site.depth, makeDepot("Bus", depots))
+		elseif site.kind == "police" then
+			TownBuildings.policeStation(frame, site.width, site.depth, makeDepot("Emergency", depots))
+		end
+	end
+end
+
+-- Street furniture -----------------------------------------------------------------------------
+
+
+-- The AHDEV pack's own special road pieces (zebra crossing, bus stop) fit our town streets exactly, so where
+-- the place has the pack they're dropped onto the road (sitting a hair above it so the two never flicker)
+local function packPiece(name: string): Model?
+	local pack = ServerStorage:FindFirstChild("PackImport")
+	local roads = pack and pack:FindFirstChild("AHDEV Roads")
+	if not roads then
+		return nil
+	end
+	for _, d in roads:GetDescendants() do
+		if d:IsA("Model") and d.Name == name and not d:FindFirstAncestor("[DELETE] Example Layout") then
+			return d
+		end
+	end
+	return nil
+end
+
+type PackPiece = { model: Model, centre: CFrame, size: Vector3 }
+local packCache: { [string]: PackPiece } = {}
+local packMissing: { [string]: boolean } = {}
+
+local function placePackPiece(name: string, at: Vector3, direction: Vector3): boolean
+	local cached = packCache[name]
+	if not cached then
+		if packMissing[name] then
+			return false
+		end
+		local model = packPiece(name)
+		if not model then
+			packMissing[name] = true
+			return false
+		end
+		local cf, size = model:GetBoundingBox()
+		cached = { model = model, centre = cf, size = size }
+		packCache[name] = cached
+	end
+	local piece = cached.model:Clone()
+	-- The pack's roads run along their Z: put the middle of the piece's road surface on ours. Its road is the
+	-- quarter-stud slab at the bottom, so its top sits just above our road's top.
+	local bottom = cached.centre.Position.Y - cached.size.Y / 2
+	local pivotToCentre = piece:GetPivot():ToObjectSpace(cached.centre)
+	local target = CFrame.lookAt(at, at + direction) * CFrame.new(0, (cached.centre.Position.Y - bottom) - 0.25 + ROAD_TOP + 0.03, 0)
+	piece:PivotTo(target * pivotToCentre:Inverse())
+	for _, d in piece:GetDescendants() do
+		if d:IsA("BasePart") then
+			d.Anchored = true
+			d.CanTouch = false
+		elseif d:IsA("LuaSourceContainer") then
+			d:Destroy()
+		end
+	end
+	piece.Parent = TownKit.getParent()
+	return true
+end
+
+local function buildStreetFurniture(result: RoadNetwork.Result)
+	for index, road in result.roads do
+		local path = road.path
+		local s0, s1 = road.startTrim + 10, path.length - road.endTrim - 10
+		if s1 - s0 < 40 then
+			continue
+		end
+		local function onGround(s: number): boolean
+			local p = RoadKit.at(path, s)
+			return math.abs(p.Y - ROAD_TOP - groundAt(p.X, p.Z)) < 1
+		end
+		local noParking: { { number } } = {}
+		local kind = road.kind
+
+		if road.side == "pavement" then
+			-- One lamp post every 110 studs, swapping sides, at the kerb
+			local s = s0 + 30
+			local lampSide = if index % 2 == 0 then 1 else -1
+			while s < s1 - 20 do
+				if onGround(s) and s > road.sideFrom[lampSide] + 10 and s < road.sideTo[lampSide] - 10 then
+					local p, _, n = RoadKit.at(path, s)
+					TownProps.lampPost(p + n * lampSide * (road.hw + KERB_WIDTH + 0.8), -n * lampSide)
+				end
+				s += 110
+				lampSide = -lampSide
+			end
+			local middle = (s0 + s1) / 2
+			-- Town streets the same size as the pack's: its zebra crossing or bus stop piece halfway along
+			if kind == "town" and s1 - s0 > 160 and onGround(middle) then
+				local p, direction = RoadKit.at(path, middle)
+				local placed = false
+				if index % 3 == 0 then
+					placed = placePackPiece("[ROAD] Single Carriageway 1L Zebra Crossing", Vector3.new(p.X, 0, p.Z), direction)
+				elseif index % 3 == 1 then
+					placed = placePackPiece("[ROAD] Single Carriageway 1L Bus Stop", Vector3.new(p.X, 0, p.Z), direction)
+				end
+				if placed then
+					table.insert(noParking, { middle - 30, middle + 30 })
+				end
+			end
+			-- A bus stop on the longer main roads
+			if (kind == "main" or kind == "high") and s1 - s0 > 600 then
+				local at = s0 + (s1 - s0) * 0.5
+				if onGround(at) then
+					local p, along, n = RoadKit.at(path, at)
+					local stopSide = if index % 2 == 0 then 1 else -1
+					local kerb = Vector3.new(p.X, 0, p.Z) + n * stopSide * road.hw
+					TownProps.busStop(CFrame.lookAt(kerb, kerb - n * stopSide))
+					TownProps.bin(kerb + n * stopSide * 2.5 - along * 11, -n * stopSide)
+					table.insert(noParking, { at - 30, at + 30 })
+				end
+			end
+			-- A zebra crossing halfway along the high streets
+			if kind == "high" and onGround(middle) then
+				local p, direction, n = RoadKit.at(path, middle)
+				TownProps.zebra(CFrame.lookAt(Vector3.new(p.X, 0, p.Z), Vector3.new(p.X, 0, p.Z) + direction), road.hw * 2)
+				for _, kerbSide in { -1, 1 } do
+					for _, along in { -4.5, 4.5 } do
+						TownProps.belisha(p + n * kerbSide * (road.hw + 1.5) + direction * along)
+					end
+				end
+				table.insert(noParking, { middle - 32, middle + 32 })
+			end
+			-- A red telephone box on the high streets
+			if kind == "high" then
+				local at = s0 + (s1 - s0) * 0.3
+				if onGround(at) then
+					local p, _, n = RoadKit.at(path, at)
+					local spot = p + n * -(road.hw + KERB_WIDTH + 2.5)
+					TownProps.phoneBox(Vector3.new(spot.X, 0, spot.Z), n, false)
+					table.insert(noParking, { at - 12, at + 12 })
+				end
+			end
+		end
+
+		-- 30 limit signs where roads come into the villages and town, national limit signs going out
+		if (kind == "aroad" or kind == "lane") and s1 - s0 > 200 then
+			for _, info in { { s0 + 25, 1 }, { s1 - 25, -1 } } do
+				local at, side = info[1], info[2]
+				local p, direction, n = RoadKit.at(path, at)
+				local inside = zoneAt(p.X, p.Z) ~= nil
+				local beyond = RoadKit.at(path, at + side * 120)
+				local outside = zoneAt(beyond.X, beyond.Z) == nil
+				if onGround(at) and inside and outside then
+					local spot = p + n * side * (road.hw + 3)
+					TownProps.limitSign(Vector3.new(spot.X, 0, spot.Z), direction * -side, 30)
+				end
+			end
+		end
+
+		-- Parked cars along both kerbs, clear of junctions (where the double yellows are)
+		local parking = road.profile.parking or 0
+		if parking > 0 and road.side == "pavement" then
+			for _, side in { 1, -1 } do
+				local from, to = road.sideFrom[side] + 60, road.sideTo[side] - 60
+				local s = from + random:NextNumber() * 10
+				while s < to do
+					local blocked = not onGround(s)
+					for _, range in noParking do
+						if s > range[1] and s < range[2] then
+							blocked = true
+						end
+					end
+					if not blocked and random:NextNumber() < 0.72 then
+						local p, direction, n = RoadKit.at(path, s)
+						local at = p + n * side * (road.hw - parking / 2)
+						local facing = if side > 0 then direction else -direction
+						local degrees = math.deg(math.atan2(-facing.X, -facing.Z))
+						table.insert(parkingSpots, { math.round(at.X * 10) / 10, math.round(at.Y * 100) / 100, math.round(at.Z * 10) / 10, math.round(degrees) })
+					end
+					s += random:NextNumber(21, 25)
+				end
+			end
+		end
+	end
+end
+
+-- Pavements for the people walking about: a line of points down the middle of each pavement (the
+-- Pedestrians client script walks people along them). Each line is { x1, z1, x2, z2, ... }.
+local pavementLines: { { number } } = {}
+
+local function collectPavements(result: RoadNetwork.Result)
+	table.clear(pavementLines)
+	for _, road in result.roads do
+		if road.side ~= "pavement" then
+			continue
+		end
+		local path = road.path
+		for _, side in { 1, -1 } do
+			local from = (road.sideFrom[side] or road.startTrim) + 4
+			local to = (road.sideTo[side] or (path.length - road.endTrim)) - 4
+			local flat: { number } = {}
+			local s = from
+			while s <= to do
+				local p, _, n = RoadKit.at(path, s)
+				if p.Y - ROAD_TOP > 1.5 then
+					break -- not over bridges
+				end
+				local at = p + n * side * (road.hw + KERB_WIDTH + road.sideWidth * 0.5)
+				table.insert(flat, math.round(at.X * 10) / 10)
+				table.insert(flat, math.round(at.Z * 10) / 10)
+				s += 24
+			end
+			if #flat >= 4 then
+				table.insert(pavementLines, flat)
+			end
+		end
+	end
+end
+
+-- The edge of the world: fields carrying on past it, an invisible wall so nobody drives off, and lines of
+-- woodland out in the haze
+local TREELINE = { Color3.fromRGB(52, 78, 44), Color3.fromRGB(60, 88, 50), Color3.fromRGB(46, 70, 40), Color3.fromRGB(66, 92, 54) }
+
+local function buildEdges()
+	local reach = 1200
+	local width, depth = MAX_X - MIN_X, MAX_Z - MIN_Z
+	for _, info in {
+		{ Vector3.new(width + reach * 2, 4, reach), Vector3.new((MIN_X + MAX_X) / 2, -2.06, MIN_Z - reach / 2) },
+		{ Vector3.new(width + reach * 2, 4, reach), Vector3.new((MIN_X + MAX_X) / 2, -2.06, MAX_Z + reach / 2) },
+		{ Vector3.new(reach, 4, depth), Vector3.new(MIN_X - reach / 2, -2.06, (MIN_Z + MAX_Z) / 2) },
+		{ Vector3.new(reach, 4, depth), Vector3.new(MAX_X + reach / 2, -2.06, (MIN_Z + MAX_Z) / 2) },
+	} do
+		for _, tile in TownKit.tiles(info[1], info[2], Color3.fromRGB(100, 136, 66), Enum.Material.Grass) do
+			tile.Parent = groundModel
+		end
+	end
+	local outline: { Vector3 } = {}
+	for _, p in layout.outline do
+		table.insert(outline, Vector3.new(p[1], 0, p[2]))
+	end
+	local middle = Vector3.zero
+	for _, p in outline do
+		middle += p
+	end
+	middle /= #outline
+	for k = 1, #outline do
+		local a, b = outline[k], outline[k % #outline + 1]
+		local length = (b - a).Magnitude
+		if length < 1 then
+			continue
+		end
+		local along = (b - a).Unit
+		local outward = Vector3.new(along.Z, 0, -along.X)
+		if outward:Dot((a + b) / 2 - middle) < 0 then
+			outward = -outward
+		end
+		local wallCentre = (a + b) / 2 + Vector3.new(0, 70, 0)
+		local wall = box(Vector3.new(4, 140, length + 4), CFrame.lookAt(wallCentre, wallCentre + along), C.Grass)
+		wall.Transparency = 1
+		-- Woods and copses a little way out, as rounded green masses in the haze
+		local d = 0
+		while d < length do
+			local w = random:NextNumber(50, 140)
+			local deep = random:NextNumber(40, 100)
+			local h = random:NextNumber(26, 48)
+			local at = a + along * math.min(d + w / 2, length) + outward * (random:NextNumber(80, 420) + deep / 2)
+			standIn(CFrame.lookAt(at + Vector3.new(0, h / 2, 0), at + Vector3.new(0, h / 2, 0) - outward), Vector3.new(w, h, deep), TREELINE[random:NextInteger(1, #TREELINE)], Enum.Material.LeafyGrass)
+			d += w + random:NextNumber(10, 120)
+		end
+	end
+end
+
+-- Putting it all together ----------------------------------------------------------------------
+
+function CambridgeMap.build()
+	local started = os.clock()
+	for _, name in { "Cambridge", "London", "Depots" } do
+		local old = Workspace:FindFirstChild(name)
+		if old then
+			old:Destroy()
+		end
+	end
+	Workspace.Terrain:Clear()
+	buffer.fill(grid, 0, 0)
+	table.clear(minimap)
+
+	mapInfo = ReplicatedStorage:FindFirstChild("MapInfo") :: Configuration? or Instance.new("Configuration")
+	mapInfo.Name = "MapInfo"
+	mapInfo:ClearAllChildren()
+	mapInfo.Parent = ReplicatedStorage
+
+	folder = Instance.new("Folder")
+	folder.Name = "Cambridge"
+	TownKit.setParent(folder)
+	farAway = Instance.new("Model")
+	farAway.Name = "FarAway"
+	farAway.ModelStreamingMode = Enum.ModelStreamingMode.Persistent
+	farAway.Parent = folder
+	local depots = Instance.new("Folder")
+	depots.Name = "Depots"
+
+	-- The place's own baseplate would cover the river, so drop it out of the way
+	local baseplate = Workspace:FindFirstChild("Baseplate")
+	if baseplate and baseplate:IsA("BasePart") then
+		baseplate.Position = Vector3.new(baseplate.Position.X, -80, baseplate.Position.Z)
+	end
+
+	local stageStart = os.clock()
+	local function stage(name: string)
+		if RunService:IsStudio() then
+			print(string.format("[CambridgeMap] %s (%.1fs)", name, os.clock() - stageStart))
+		end
+		stageStart = os.clock()
+	end
+	buildRiver()
+	stage("river")
+	local result = RoadNetwork.build(layout, groundAt, function(x: number, z: number): boolean
+		return cellAt(x, z) == ROAD
+	end, markRoads)
+	stage("roads")
+	buildGround()
+	stage("ground and fields")
+	buildRailway()
+	buildBanks(result.roads)
+	buildSites(depots)
+	stage("railway, banks and sites")
+	loadKit()
+	table.clear(parkingSpots)
+	buildingCount = 0
+	buildStreets(result)
+	buildInfill()
+	buildCampuses()
+	local openLand = buildOpenLand()
+	stage("buildings")
+	buildStreetFurniture(result)
+	stage("street furniture")
+	buildRoadsideHedges(result)
+	local hedgeTrees = buildFieldHedges()
+	local woodTrees = buildWoods()
+	stage("hedges and woods")
+	collectPavements(result)
+	buildEdges()
+	stage("edges")
+
+	for _, entry in result.minimap do
+		table.insert(minimap, entry)
+	end
+	local half = layout.river.width / 2
+	for k = 2, #riverPath.points do
+		local a, b = riverPath.points[k - 1], riverPath.points[k]
+		table.insert(minimap, { "l" :: any, math.round(a.X), math.round(a.Z), math.round(b.X), math.round(b.Z), half * 2, "water" })
+	end
+
+	folder.Parent = Workspace
+	depots.Parent = Workspace
+
+	-- Tell the menus where to point the camera
+	for _, depot in depots:GetChildren() do
+		local spot = depot:GetAttribute("ShowroomSpot")
+		if typeof(spot) == "CFrame" then
+			mapInfo:SetAttribute("Showroom_" .. depot.Name, spot)
+		end
+	end
+	-- Over the Backs, looking at the chapel with the river in front of it
+	local chapelAt = mapInfo:GetAttribute("Chapel")
+	local lookAt = if typeof(chapelAt) == "Vector3" then chapelAt + Vector3.new(0, 40, 0) else Vector3.new(-700, 40, 270)
+	mapInfo:SetAttribute("MenuCamera", CFrame.lookAt(Vector3.new(-1150, 70, 520), lookAt))
+
+	local minimapData = Instance.new("StringValue")
+	minimapData.Name = "Minimap"
+	minimapData.Value = HttpService:JSONEncode(minimap)
+	minimapData.Parent = mapInfo
+
+	local parkingData = Instance.new("StringValue")
+	parkingData.Name = "ParkedCars"
+	parkingData.Value = HttpService:JSONEncode(parkingSpots)
+	parkingData.Parent = mapInfo
+
+	local pavementData = Instance.new("StringValue")
+	pavementData.Name = "Pavements"
+	pavementData.Value = HttpService:JSONEncode(pavementLines)
+	pavementData.Parent = mapInfo
+
+	-- Players walking about start on Parker's Piece
+	local spawn = Workspace:FindFirstChildOfClass("SpawnLocation")
+	if spawn then
+		spawn.CFrame = CFrame.new(660, PAVEMENT_TOP + 1.5, 330)
+	end
+
+	local parts = 0
+	for _, descendant in folder:GetDescendants() do
+		if descendant:IsA("BasePart") then
+			parts += 1
+		end
+	end
+	print(string.format("[CambridgeMap] Built Cambridge: %d roads, %d buildings, %d playing fields, allotments and copses, %d hedgerow and %d woodland trees, %d parking spaces, %d parts in %.1f seconds",
+		#result.roads, buildingCount, openLand, hedgeTrees, woodTrees, #parkingSpots, parts, os.clock() - started))
+	return result
+end
+
+-- Removes the map (for example after building it in Studio to look round, so the place file stays small and
+-- the game builds it fresh when it starts)
+function CambridgeMap.clear()
+	for _, name in { "Cambridge", "Depots" } do
+		local old = Workspace:FindFirstChild(name)
+		if old then
+			old:Destroy()
+		end
+	end
+	local info = ReplicatedStorage:FindFirstChild("MapInfo")
+	if info then
+		info:Destroy()
+	end
+	Workspace.Terrain:Clear()
+end
+
+return CambridgeMap
+]=])
 put(folder4, "ModuleScript", "CarBuilder", [[
 -- Builds every vehicle in the game. Cars.luau uses CarBuilder.build both for drivable vehicles and for
 -- the display models in the menu.
@@ -2465,7 +6651,8 @@ end
 return Garage
 ]])
 put(folder4, "ModuleScript", "LightingSetup", [[
--- A bright British day with fluffy clouds, like Birmingham Vehicle Simulator: soft shadows, haze in the distance, gentle colour grading.
+-- A bright British day with big white clouds, like Birmingham Vehicle Simulator: soft shadows, a light haze in the distance,
+-- gentle colour grading.
 -- The "Future" lighting technology can't be set from code, so the game file sets it (Lighting → Technology in Studio).
 
 local Lighting = game:GetService("Lighting")
@@ -2486,25 +6673,26 @@ local function freshEffect(className: string, parent: Instance): any
 end
 
 function LightingSetup.apply()
-	Lighting.ClockTime = 13.5
-	Lighting.GeographicLatitude = 51.5 -- London, so the sun sits where it should
-	Lighting.Brightness = 3
-	Lighting.Ambient = Color3.fromRGB(40, 40, 45)
-	Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 135)
+	Lighting.ClockTime = 13.2
+	Lighting.GeographicLatitude = 52.2 -- Cambridge, so the sun sits where it should
+	Lighting.Brightness = 2.8
+	Lighting.Ambient = Color3.fromRGB(42, 42, 46)
+	Lighting.OutdoorAmbient = Color3.fromRGB(138, 140, 146)
 	Lighting.EnvironmentDiffuseScale = 1 -- light bounces off the sky onto everything
 	Lighting.EnvironmentSpecularScale = 1 -- shiny things (car paint, glass) reflect the sky
 	Lighting.GlobalShadows = true
 	Lighting.ShadowSoftness = 0.3
-	Lighting.ExposureCompensation = 0.1
+	Lighting.ExposureCompensation = 0.2
 
+	-- Like Birmingham Vehicle Simulator's sky (from Lewis's screen, 18 Oct 2026): a clear blue sky with big white
+	-- clouds, and a light blue-grey haze that softens the far fields and buildings rather than a grey fog
 	local atmosphere = freshEffect("Atmosphere", Lighting) :: Atmosphere
-	-- Thick enough that the far end of a street fades into grey, like BVS, so the city seems to go on forever
-	atmosphere.Density = 0.36
-	atmosphere.Offset = 0.2
-	atmosphere.Color = Color3.fromRGB(202, 204, 208)
-	atmosphere.Decay = Color3.fromRGB(112, 118, 130)
-	atmosphere.Glare = 0.15
-	atmosphere.Haze = 1.7
+	atmosphere.Density = 0.3
+	atmosphere.Offset = 0.25
+	atmosphere.Color = Color3.fromRGB(199, 212, 228)
+	atmosphere.Decay = Color3.fromRGB(104, 124, 152)
+	atmosphere.Glare = 0.2
+	atmosphere.Haze = 1.15
 
 	local bloom = freshEffect("BloomEffect", Lighting) :: BloomEffect
 	bloom.Intensity = 0.5
@@ -2513,18 +6701,18 @@ function LightingSetup.apply()
 
 	local grading = freshEffect("ColorCorrectionEffect", Lighting) :: ColorCorrectionEffect
 	grading.Brightness = 0.02
-	grading.Contrast = 0.12
-	grading.Saturation = 0.02
-	grading.TintColor = Color3.fromRGB(255, 250, 245)
+	grading.Contrast = 0.1
+	grading.Saturation = -0.04
+	grading.TintColor = Color3.fromRGB(255, 252, 248)
 
 	local sunRays = freshEffect("SunRaysEffect", Lighting) :: SunRaysEffect
 	sunRays.Intensity = 0.05
 	sunRays.Spread = 0.8
 
 	local clouds = freshEffect("Clouds", Workspace.Terrain) :: Clouds
-	clouds.Cover = 0.55
-	clouds.Density = 0.7
-	clouds.Color = Color3.fromRGB(235, 235, 235)
+	clouds.Cover = 0.62
+	clouds.Density = 0.75
+	clouds.Color = Color3.fromRGB(250, 250, 250)
 end
 
 return LightingSetup
@@ -7510,6 +11698,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Cars = require(script.Parent.Cars)
 local Garage = require(script.Parent.Garage)
 local LightingSetup = require(script.Parent.LightingSetup)
+local CambridgeMap = require(script.Parent.CambridgeMap)
 local LondonMap = require(script.Parent.LondonMap)
 local Pedestrians = require(script.Parent.Pedestrians)
 local PlayerData = require(script.Parent.PlayerData)
@@ -7517,11 +11706,15 @@ local TrafficLights = require(script.Parent.TrafficLights)
 
 LightingSetup.apply()
 PlayerData.start()
--- Build London, unless it's already saved in the place (built in Studio with the Command Bar)
-if Config.BuildMap and not Workspace:FindFirstChild("London") then
-	LondonMap.build()
+-- Build the map, unless it's already saved in the place (built in Studio with the Command Bar)
+if Config.Map == "London" then
+	if Config.BuildMap and not Workspace:FindFirstChild("London") then
+		LondonMap.build()
+	end
+	LondonMap.startClock()
+elseif Config.BuildMap and not Workspace:FindFirstChild("Cambridge") then
+	CambridgeMap.build()
 end
-LondonMap.startClock()
 Pedestrians.setup()
 TrafficLights.start()
 Cars.start()
@@ -8324,7 +12517,7 @@ local function paintPiece(a: Vector3, b: Vector3, width: number, colour: Color3,
 		return nil
 	end
 	local middle = (a + b) / 2 + Vector3.new(0, PAINT_LIFT, 0)
-	local part = TownKit.detail(Vector3.new(width, 0.05, length + (extra or 0)), CFrame.lookAt(middle, middle + along), colour)
+	local part = TownKit.detail(Vector3.new(width, 0.05, length + (extra or 0)), CFrame.lookAt(middle, middle + along), colour, Enum.Material.Concrete)
 	part.CastShadow = false
 	return part
 end
@@ -8361,7 +12554,7 @@ end
 -- A painted triangle (give-way triangles, chevrons)
 function RoadKit.paintTriangle(a: Vector3, b: Vector3, c: Vector3, colour: Color3)
 	local lift = Vector3.new(0, PAINT_LIFT + 0.025, 0)
-	local made = RoadKit.triangle(a + lift, b + lift, c + lift, { colour = colour, material = Enum.Material.SmoothPlastic, thickness = 0.05, collide = false })
+	local made = RoadKit.triangle(a + lift, b + lift, c + lift, { colour = colour, material = Enum.Material.Concrete, thickness = 0.05, collide = false })
 	for _, part in made do
 		part.CanQuery = false
 		part.CastShadow = false
@@ -8392,10 +12585,14 @@ local C = TownKit.Colours
 local ROAD_TOP = TownKit.ROAD_TOP
 local KERB = TownKit.KERB_HEIGHT
 
-local ROAD = { colour = C.Asphalt, material = Enum.Material.Asphalt, thickness = 2 }
-local MOTORWAY_ROAD = { colour = Color3.fromRGB(90, 91, 94), material = Enum.Material.Asphalt, thickness = 2 }
-local PAVEMENT = { colour = C.Pavement, material = Enum.Material.Pavement, thickness = KERB + 2 }
-local RED_PAVEMENT = { colour = C.RedPaving, material = Enum.Material.Pavement, thickness = KERB + 2 }
+-- The look of the AHDEV UK road pack Lewis bought: matte Concrete everywhere, a dark grey road, darker kerb
+-- stones and light grey pavements, with thin bright paint
+local ROAD = { colour = C.Asphalt, material = TownKit.ROAD_MATERIAL, thickness = 2 }
+local MOTORWAY_ROAD = ROAD
+local PAVEMENT = { colour = C.Pavement, material = Enum.Material.Concrete, thickness = KERB + 2 }
+local KERB_STONES = { colour = C.Kerb, material = Enum.Material.Concrete, thickness = KERB + 2 }
+local KERB_WIDTH = TownKit.KERB_WIDTH
+local LINE = 0.25 -- paint lines are a quarter of a stud wide, like the pack's
 local ISLAND = { colour = C.Grass, material = Enum.Material.Grass, thickness = KERB + 2 }
 local CONCRETE = { colour = C.Concrete, material = Enum.Material.Concrete, thickness = KERB + 2 }
 local PARAPET_COLOUR = Color3.fromRGB(178, 176, 170)
@@ -8674,7 +12871,9 @@ local function buildCornerPavements(node: Node, corners: { Corner })
 		local y = node.pos.Y
 		local ta, tb = corner.ta :: Vector3, corner.tb :: Vector3
 		local points = shortArc(corner.centre :: Vector3, Vector3.new(ta.X, y, ta.Z), Vector3.new(tb.X, y, tb.Z), y)
-		RoadKit.strip(points, RoadKit.normalsFor(points), -width, 0, PAVEMENT, KERB)
+		local normals = RoadKit.normalsFor(points)
+		RoadKit.strip(points, normals, -KERB_WIDTH, 0, KERB_STONES, KERB)
+		RoadKit.strip(points, normals, -width - KERB_WIDTH, -KERB_WIDTH, PAVEMENT, KERB)
 	end
 end
 
@@ -8712,16 +12911,22 @@ local function buildRoundabout(node: Node, ends: { RoundaboutEnd })
 		limit = math.max(limit, info.e.road.limit)
 	end
 	-- The circle of tarmac, a touch lower than the roads so the two never flicker
-	local disc = cylinder(node.radius, 2, node.pos - Vector3.new(0, 0.05, 0), C.Asphalt, Enum.Material.Asphalt)
-	disc:SetAttribute("SpeedLimit", limit)
-	-- The island: a kerb ring, filled with real grass (Terrain), which looks better than a grassy part
-	cylinder(node.island + 0.6, KERB + 1.5, node.pos + Vector3.new(0, KERB - 0.1, 0), C.Kerb, Enum.Material.Concrete)
-	-- A low grassy mound that rises a little above the kerb. Terrain needs at least 4 studs of height to
-	-- fill anything, so most of this sits hidden below the road.
-	Workspace.Terrain:FillCylinder(CFrame.new(node.pos + Vector3.new(0, KERB - 2.1, 0)), 6, node.island - 0.4, Enum.Material.Grass)
-	-- On stilts if it's above the ground (motorway junctions)
 	if y > 1 + ROAD_TOP then
-		cylinder(node.radius - 1, y - 2, node.pos - Vector3.new(0, 2, 0), PILLAR_COLOUR, Enum.Material.Concrete)
+		-- Raised up over the motorway (most M11 junctions): an open ring of road on pillars (see
+		-- buildRoundaboutPillars), with a parapet round the inside, and the motorway running underneath it
+		local mid = (node.radius + node.island) / 2
+		local centre = Vector3.new(node.pos.X, y, node.pos.Z)
+		local ring = RoadKit.arc(centre, mid, 0, 2 * math.pi, math.rad(4))
+		setLimit(RoadKit.strip(ring, RoadKit.normalsFor(ring), -(mid - node.island), node.radius - mid, ROAD), limit)
+		RoadKit.parapet(RoadKit.arc(centre, node.island - 0.6, 0, 2 * math.pi, math.rad(4)), 3, 2, 1.2, PARAPET_COLOUR, Enum.Material.Concrete)
+	else
+		local disc = cylinder(node.radius, 2, node.pos - Vector3.new(0, 0.05, 0), C.Asphalt, TownKit.ROAD_MATERIAL)
+		disc:SetAttribute("SpeedLimit", limit)
+		-- The island: a kerb ring, filled with real grass (Terrain), which looks better than a grassy part
+		cylinder(node.island + 0.6, KERB + 1.5, node.pos + Vector3.new(0, KERB - 0.1, 0), C.Kerb, Enum.Material.Concrete)
+		-- A low grassy mound that rises a little above the kerb. Terrain needs at least 4 studs of height to
+		-- fill anything, so most of this sits hidden below the road.
+		Workspace.Terrain:FillCylinder(CFrame.new(node.pos + Vector3.new(0, KERB - 2.1, 0)), 6, node.island - 0.4, Enum.Material.Grass)
 	end
 
 	-- Where each road opens out into the circle
@@ -8778,7 +12983,8 @@ local function buildRoundabout(node: Node, ends: { RoundaboutEnd })
 		if raised then
 			RoadKit.parapet(RoadKit.offset(points, normals, -0.6), 3, 2, 1.2, PARAPET_COLOUR, Enum.Material.Concrete)
 		elseif width > 0 then
-			RoadKit.strip(points, normals, -math.min(width, 17), 0, PAVEMENT, KERB)
+			RoadKit.strip(points, normals, -KERB_WIDTH, 0, KERB_STONES, KERB)
+			RoadKit.strip(points, normals, -math.min(width, 17) - KERB_WIDTH, -KERB_WIDTH, PAVEMENT, KERB)
 		end
 	end
 
@@ -8786,11 +12992,11 @@ local function buildRoundabout(node: Node, ends: { RoundaboutEnd })
 	local ring = node.radius - node.island
 	if ring >= 24 then
 		local middle = node.island + ring / 2
-		local count = math.floor(2 * math.pi * middle / 14)
+		local count = math.floor(2 * math.pi * middle / 9)
 		for k = 0, count - 1 do
 			local angle = k / count * 2 * math.pi
 			local at = node.pos + Vector3.new(math.cos(angle) * middle, 0, math.sin(angle) * middle)
-			RoadKit.mark(at, Vector3.new(-math.sin(angle), 0, math.cos(angle)), 0.45, 6, C.White)
+			RoadKit.mark(Vector3.new(at.X, y, at.Z), Vector3.new(-math.sin(angle), 0, math.cos(angle)), LINE, 4, C.White)
 		end
 	end
 	node.reach = node.radius + 4
@@ -8976,46 +13182,54 @@ end
 local function centreLines(road: Road, s0: number, s1: number)
 	local p = road.profile
 	local path = road.path
+	local kind = road.kind
 	if p.oneway then
-		local inside = road.hw - p.edge - 0.6
-		RoadKit.pathLine(path, s0, s1, inside, 0.45, C.White)
-		RoadKit.pathLine(path, s0, s1, -inside, 0.45, C.White)
+		local inside = road.hw - p.edge - 0.5
+		RoadKit.pathLine(path, s0, s1, inside, 0.3, C.White)
+		RoadKit.pathLine(path, s0, s1, -inside, 0.3, C.White)
 		return
 	end
 	if p.res == 0 then
-		local dash, gap = 6, 6
-		if road.kind == "street" or road.kind == "lane" or road.kind == "back" then
-			dash, gap = 3, 9
-		elseif road.kind == "high" then
-			dash, gap = 4, 7
+		-- Country lanes have no lines at all; everything else has the pack's centre line (5.5-stud dashes with
+		-- 2.75-stud gaps), with long warning dashes just before junctions
+		if kind ~= "lane" then
+			local hazardStart = if road.a.kind == "attach" or road.a.kind == "end" or road.a.kind == "join" then s0 else s0 + HAZARD_LENGTH
+			local hazardEnd = if road.b.kind == "attach" or road.b.kind == "end" or road.b.kind == "join" then s1 else s1 - HAZARD_LENGTH
+			if hazardEnd - hazardStart > 30 then
+				RoadKit.dashes(path, s0, hazardStart, 0, LINE, 6, 1.5, C.White)
+				RoadKit.dashes(path, hazardStart, hazardEnd, 0, LINE, 5.5, 2.75, C.White)
+				RoadKit.dashes(path, hazardEnd, s1, 0, LINE, 6, 1.5, C.White)
+			else
+				RoadKit.dashes(path, s0, s1, 0, LINE, 6, 1.5, C.White)
+			end
 		end
-		-- Long warning dashes just before junctions
-		local hazardStart = if road.a.kind == "attach" or road.a.kind == "end" or road.a.kind == "join" then s0 else s0 + HAZARD_LENGTH
-		local hazardEnd = if road.b.kind == "attach" or road.b.kind == "end" or road.b.kind == "join" then s1 else s1 - HAZARD_LENGTH
-		if hazardEnd - hazardStart > 30 then
-			RoadKit.dashes(path, s0, hazardStart, 0, 0.5, 6, 2, C.White)
-			RoadKit.dashes(path, hazardStart, hazardEnd, 0, 0.5, dash, gap, C.White)
-			RoadKit.dashes(path, hazardEnd, s1, 0, 0.5, 6, 2, C.White)
-		else
-			RoadKit.dashes(path, s0, s1, 0, 0.5, 6, 2, C.White)
+		-- Two lanes each way: short lane dashes between them, like the pack's 2-lane road
+		for k = 1, p.lanes - 1 do
+			for _, side in { 1, -1 } do
+				RoadKit.dashes(path, s0, s1, side * p.lane * k, LINE, 2.5, 5.75, C.White)
+			end
 		end
 		if p.edge > 0 then
 			for _, side in { 1, -1 } do
 				for _, piece in sidePieces(road, side, s0, s1) do
-					RoadKit.pathLine(path, piece[1], piece[2], side * (road.hw - p.edge - 0.4), 0.4, C.White)
+					RoadKit.pathLine(path, piece[1], piece[2], side * (road.hw - p.edge - 0.3), 0.3, C.White)
 				end
 			end
 		end
-		-- Double yellow lines (no parking) along the kerbs near each junction. The parking strips themselves
-		-- aren't marked, like in BVS, which keeps the streets clean (and saves thousands of parts).
+		-- Double yellow lines along the kerbs (no parking): near the junctions on streets where people park,
+		-- and all the way along town streets with nowhere to park, like the pack's DY road
 		local parking = p.parking or 0
+		local ranges: { { number } } = {}
 		if parking > 0 then
 			local near = math.min(55, (s1 - s0) / 2)
-			for _, range in { { s0, s0 + near }, { s1 - near, s1 } } do
-				for _, side in { 1, -1 } do
-					for _, inset in { 0.9, 1.6 } do
-						RoadKit.pathLine(path, range[1], range[2], side * (road.hw - inset), 0.32, C.Yellow)
-					end
+			ranges = { { s0, s0 + near }, { s1 - near, s1 } }
+		elseif road.side == "pavement" then
+			ranges = { { s0, s1 } }
+		end
+		for _, range in ranges do
+			for _, side in { 1, -1 } do
+				for _, inset in { 0.375, 0.875 } do
+					RoadKit.pathLine(path, range[1], range[2], side * (road.hw - inset), LINE, C.Yellow)
 				end
 			end
 		end
@@ -9024,13 +13238,13 @@ local function centreLines(road: Road, s0: number, s1: number)
 	-- Dual carriageways and the motorway: each side has its own lanes
 	for _, side in { 1, -1 } do
 		local inner = p.res / 2
-		RoadKit.pathLine(path, s0, s1, side * (inner + 0.6), 0.45, C.White)
+		RoadKit.pathLine(path, s0, s1, side * (inner + 0.5), 0.3, C.White)
 		for k = 1, p.lanes - 1 do
-			RoadKit.dashes(path, s0, s1, side * (inner + p.lane * k), 0.45, 9, 14, C.White)
+			RoadKit.dashes(path, s0, s1, side * (inner + p.lane * k), 0.3, 7, 18, C.White)
 		end
 		local laneEdge = inner + p.lanes * p.lane
-		local width = if p.shoulder > 0 then 0.8 else 0.45
-		local offset = if p.shoulder > 0 then laneEdge else road.hw - p.edge - 0.5
+		local width = if p.shoulder > 0 then 0.6 else 0.4
+		local offset = if p.shoulder > 0 then laneEdge else road.hw - p.edge - 0.4
 		-- Solid along the edge, broken where slip roads join or a layby opens
 		local covered = s0
 		for _, piece in sidePieces(road, side, s0, s1) do
@@ -9173,6 +13387,25 @@ local function buildRaised(road: Road, ground: (number, number) -> number, isRoa
 	end
 end
 
+-- Pillars round the ring of a raised roundabout, standing clear of the roads underneath
+local function buildRoundaboutPillars(node: Node, ground: (number, number) -> number, isRoad: (number, number) -> boolean)
+	local y = node.pos.Y
+	if y <= 1 + ROAD_TOP then
+		return
+	end
+	local mid = (node.radius + node.island) / 2
+	local count = math.max(8, math.floor(2 * math.pi * mid / 40))
+	for k = 0, count - 1 do
+		local angle = k / count * 2 * math.pi
+		local at = node.pos + Vector3.new(math.cos(angle) * mid, 0, math.sin(angle) * mid)
+		local groundY = ground(at.X, at.Z)
+		local height = y - 2 - groundY
+		if height > 4 and not isRoad(at.X, at.Z) then
+			TownKit.box(Vector3.new(7, height, 5), CFrame.new(at.X, groundY + height / 2, at.Z) * CFrame.Angles(0, -angle, 0), PILLAR_COLOUR, Enum.Material.Concrete)
+		end
+	end
+end
+
 local function buildRoad(road: Road)
 	local path = road.path
 	local p = road.profile
@@ -9188,7 +13421,7 @@ local function buildRoad(road: Road)
 	if p.res > 0 and not p.oneway and s1 - s0 > 16 then
 		local nose = 8
 		local resPoints, resNormals = RoadKit.slice(path, s0 + nose, s1 - nose)
-		if road.kind == "motorway" or road.kind == "westway" then
+		if road.kind == "motorway" or road.kind == "westway" or (p :: any).barrier then
 			RoadKit.strip(resPoints, resNormals, -p.res / 2, p.res / 2, CONCRETE, 0.25)
 			RoadKit.parapet(resPoints, 2.6, 0, 1.2, PARAPET_COLOUR, Enum.Material.Concrete)
 		else
@@ -9213,11 +13446,14 @@ local function buildRoad(road: Road)
 			local from, to = road.sideFrom[side], road.sideTo[side]
 			for _, piece in sidePieces(road, side, from, to) do
 				local sidePoints, sideNormals = RoadKit.slice(path, piece[1], piece[2])
-				local walkStyle = if road.kind == "high" then RED_PAVEMENT else PAVEMENT
+				local walkStyle = PAVEMENT
+				local outer = road.hw + KERB_WIDTH + road.sideWidth
 				if side > 0 then
-					RoadKit.strip(sidePoints, sideNormals, road.hw, road.hw + road.sideWidth, walkStyle, KERB)
+					RoadKit.strip(sidePoints, sideNormals, road.hw, road.hw + KERB_WIDTH, KERB_STONES, KERB)
+					RoadKit.strip(sidePoints, sideNormals, road.hw + KERB_WIDTH, outer, walkStyle, KERB)
 				else
-					RoadKit.strip(sidePoints, sideNormals, -road.hw - road.sideWidth, -road.hw, walkStyle, KERB)
+					RoadKit.strip(sidePoints, sideNormals, -road.hw - KERB_WIDTH, -road.hw, KERB_STONES, KERB)
+					RoadKit.strip(sidePoints, sideNormals, -outer, -road.hw - KERB_WIDTH, walkStyle, KERB)
 				end
 			end
 		end
@@ -9242,9 +13478,9 @@ end
 local function minimapKind(kind: string): string
 	if kind == "motorway" then
 		return "motorway"
-	elseif kind == "dual" or kind == "arterial" or kind == "westway" or kind == "slip" then
+	elseif kind == "dual" or kind == "arterial" or kind == "westway" or kind == "slip" or kind == "link" then
 		return "dual"
-	elseif kind == "street" or kind == "lane" or kind == "back" then
+	elseif kind == "street" or kind == "lane" or kind == "back" or kind == "city" or kind == "terrace" then
 		return "side"
 	end
 	return "main"
@@ -9375,7 +13611,7 @@ function RoadNetwork.build(layout: any, ground: (number, number) -> number, isRo
 		elseif node.kind == "end" then
 			local e = node.ends[1]
 			if e then
-				local disc = cylinder(e.hw + 7, 2, node.pos - Vector3.new(0, 0.05, 0), C.Asphalt, Enum.Material.Asphalt)
+				local disc = cylinder(e.hw + 7, 2, node.pos - Vector3.new(0, 0.05, 0), C.Asphalt, TownKit.ROAD_MATERIAL)
 				disc:SetAttribute("SpeedLimit", e.road.limit)
 				node.reach = e.hw + 7
 			end
@@ -9441,9 +13677,14 @@ function RoadNetwork.build(layout: any, ground: (number, number) -> number, isRo
 		end
 	end
 
-	-- Bridges, flyovers and ramps
+	-- Bridges, flyovers and ramps, and the pillars under raised roundabouts
 	for _, road in roads do
 		buildRaised(road, ground, isRoad)
+	end
+	for _, node in nodes do
+		if node.kind == "roundabout" then
+			buildRoundaboutPillars(node, ground, isRoad)
+		end
 	end
 
 	-- The minimap: each road as straight lines, joining up the little pieces of each curve
@@ -10173,19 +14414,25 @@ local ServerStorage = game:GetService("ServerStorage")
 
 local TownKit = {}
 
--- Heights, in studs. Roads sit just above the ground and pavements are one kerb higher.
+-- Heights, in studs. Roads sit just above the ground and pavements are one kerb higher. The kerb is the AHDEV
+-- UK road pack's (a quarter of a stud: low, like real kerbs), so our roads match the pack Lewis bought.
 TownKit.ROAD_TOP = 0.1
-TownKit.KERB_HEIGHT = 0.5
+TownKit.KERB_HEIGHT = 0.25
+TownKit.KERB_WIDTH = 0.75 -- the darker kerb stones between the road and the pavement
+-- Roads, kerbs, pavements and their paint are all matte Concrete, like the pack: Roblox's Asphalt material
+-- looks rough and plasticky up close
+TownKit.ROAD_MATERIAL = Enum.Material.Concrete
 TownKit.PAVEMENT_TOP = TownKit.ROAD_TOP + TownKit.KERB_HEIGHT
 TownKit.FLOOR = 11 -- one storey of a building
 
 TownKit.Colours = {
-	Asphalt = Color3.fromRGB(150, 150, 153), -- light grainy grey, like Birmingham Vehicle Simulator's roads
-	White = Color3.fromRGB(235, 235, 232),
-	Yellow = Color3.fromRGB(240, 190, 20),
-	Pavement = Color3.fromRGB(206, 196, 186), -- the Pavement material draws herringbone block paving, like BVS
+	-- The AHDEV road pack's colours: dark grey road, mid grey kerb stones, light grey pavement, bright paint
+	Asphalt = Color3.fromRGB(84, 83, 80),
+	White = Color3.fromRGB(248, 248, 248),
+	Yellow = Color3.fromRGB(255, 255, 0),
+	Pavement = Color3.fromRGB(163, 162, 165),
 	RedPaving = Color3.fromRGB(176, 112, 100), -- block paving on the high streets
-	Kerb = Color3.fromRGB(152, 150, 144),
+	Kerb = Color3.fromRGB(99, 95, 98),
 	Grass = Color3.fromRGB(78, 128, 58),
 	Hedge = Color3.fromRGB(45, 90, 40),
 	PostOfficeRed = Color3.fromRGB(200, 16, 30),
@@ -10262,7 +14509,7 @@ end
 -- Flat road paint at road level, turned `angle` radians around the vertical
 function TownKit.paint(sizeX: number, sizeZ: number, position: Vector3, colour: Color3?, angle: number?): Part
 	local cframe = CFrame.new(position.X, TownKit.ROAD_TOP + 0.02, position.Z) * CFrame.Angles(0, angle or 0, 0)
-	local part = TownKit.detail(Vector3.new(sizeX, 0.05, sizeZ), cframe, colour or TownKit.Colours.White)
+	local part = TownKit.detail(Vector3.new(sizeX, 0.05, sizeZ), cframe, colour or TownKit.Colours.White, Enum.Material.Concrete)
 	part.CastShadow = false
 	return part
 end
@@ -10673,9 +14920,14 @@ function TownProps.sign(name: string, at: Vector3, facing: Vector3): boolean
 	return TownKit.prop(name, TownKit.facing(at, facing)) ~= nil
 end
 
--- A black and yellow keep-left bollard on the nose of a traffic island, facing the traffic coming at it
-function TownProps.keepLeft(at: Vector3, facing: Vector3)
-	TownKit.prop("KeepLeft", TownKit.facing(at, facing))
+-- A keep-left bollard on the nose of an island: a small knee-high grey post like the ones in the AHDEV road pack
+-- (Lewis hated the big ones), with a reflective band near the top
+function TownProps.keepLeft(at: Vector3, _facing: Vector3)
+	local base = CFrame.new(at) * CFrame.Angles(0, 0, math.pi / 2)
+	local post = TownKit.box(Vector3.new(2.7, 1, 1), base * CFrame.new(1.35, 0, 0), Color3.fromRGB(122, 122, 122), Enum.Material.Concrete)
+	post.Shape = Enum.PartType.Cylinder
+	local band = TownKit.detail(Vector3.new(0.3, 1.04, 1.04), base * CFrame.new(2.2, 0, 0), Color3.fromRGB(235, 235, 235), Enum.Material.SmoothPlastic)
+	band.Shape = Enum.PartType.Cylinder
 end
 
 -- A white arrow painted on the road. `direction` is the way the traffic is going.
@@ -11108,8 +15360,9 @@ local ROAD_COLOURS = {
 	yard = Color3.fromRGB(70, 74, 82),
 	water = Color3.fromRGB(45, 85, 130),
 	park = Color3.fromRGB(40, 85, 50),
+	rail = Color3.fromRGB(128, 104, 92),
 }
-local ROAD_ORDER = { water = 1, park = 1, yard = 2, side = 3, main = 4, dual = 5, motorway = 6 }
+local ROAD_ORDER = { water = 1, park = 1, rail = 2, yard = 2, side = 3, main = 4, dual = 5, motorway = 6 }
 local ROADS = { side = true, main = true, dual = true, motorway = true }
 
 -- One thing on the map. Entries are:
@@ -15187,4 +19440,4 @@ do
 end
 
 
-print("London Simulator installed 39 scripts. Press Play to test!")
+print("London Simulator installed 41 scripts. Press Play to test!")

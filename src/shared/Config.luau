@@ -21,9 +21,13 @@ Config.UnlockEverythingInStudio = true
 -- Changing this name starts everyone from scratch (e.g. to wipe test data before launch)
 Config.DataStoreName = "PlayerData_v1"
 
--- Builds London (roads, river, parks, buildings) when the game starts. See LondonMap and tools/london_layout.py.
--- Turn it off if the map is saved in the place file instead.
+-- Builds the map (roads, river, parks, buildings) when the game starts. Turn it off if the map is saved in the
+-- place file instead.
 Config.BuildMap = true
+
+-- Which map: "Cambridge" (the city and countryside, see CambridgeMap and tools/cambridge_layout.py) or "London"
+-- (the first map, see LondonMap and tools/london_layout.py)
+Config.Map = "Cambridge"
 
 -- 1 stud is about 0.28 metres, so 1 stud per second is about 0.626 mph
 Config.MphPerStudPerSecond = 0.626

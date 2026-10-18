@@ -409,7 +409,7 @@ local function paintPiece(a: Vector3, b: Vector3, width: number, colour: Color3,
 		return nil
 	end
 	local middle = (a + b) / 2 + Vector3.new(0, PAINT_LIFT, 0)
-	local part = TownKit.detail(Vector3.new(width, 0.05, length + (extra or 0)), CFrame.lookAt(middle, middle + along), colour)
+	local part = TownKit.detail(Vector3.new(width, 0.05, length + (extra or 0)), CFrame.lookAt(middle, middle + along), colour, Enum.Material.Concrete)
 	part.CastShadow = false
 	return part
 end
@@ -446,7 +446,7 @@ end
 -- A painted triangle (give-way triangles, chevrons)
 function RoadKit.paintTriangle(a: Vector3, b: Vector3, c: Vector3, colour: Color3)
 	local lift = Vector3.new(0, PAINT_LIFT + 0.025, 0)
-	local made = RoadKit.triangle(a + lift, b + lift, c + lift, { colour = colour, material = Enum.Material.SmoothPlastic, thickness = 0.05, collide = false })
+	local made = RoadKit.triangle(a + lift, b + lift, c + lift, { colour = colour, material = Enum.Material.Concrete, thickness = 0.05, collide = false })
 	for _, part in made do
 		part.CanQuery = false
 		part.CastShadow = false

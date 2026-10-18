@@ -340,9 +340,14 @@ function TownProps.sign(name: string, at: Vector3, facing: Vector3): boolean
 	return TownKit.prop(name, TownKit.facing(at, facing)) ~= nil
 end
 
--- A black and yellow keep-left bollard on the nose of a traffic island, facing the traffic coming at it
-function TownProps.keepLeft(at: Vector3, facing: Vector3)
-	TownKit.prop("KeepLeft", TownKit.facing(at, facing))
+-- A keep-left bollard on the nose of an island: a small knee-high grey post like the ones in the AHDEV road pack
+-- (Lewis hated the big ones), with a reflective band near the top
+function TownProps.keepLeft(at: Vector3, _facing: Vector3)
+	local base = CFrame.new(at) * CFrame.Angles(0, 0, math.pi / 2)
+	local post = TownKit.box(Vector3.new(2.7, 1, 1), base * CFrame.new(1.35, 0, 0), Color3.fromRGB(122, 122, 122), Enum.Material.Concrete)
+	post.Shape = Enum.PartType.Cylinder
+	local band = TownKit.detail(Vector3.new(0.3, 1.04, 1.04), base * CFrame.new(2.2, 0, 0), Color3.fromRGB(235, 235, 235), Enum.Material.SmoothPlastic)
+	band.Shape = Enum.PartType.Cylinder
 end
 
 -- A white arrow painted on the road. `direction` is the way the traffic is going.
